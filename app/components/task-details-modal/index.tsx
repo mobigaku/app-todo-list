@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { PencilIcon, TrashIcon } from "lucide-react";
-import { TaskStatusPriority } from "@/components/task-status-priority";
+import { TaskStatusPriority } from "@/app/components/task-status-priority";
 
 interface TaskWithCategory extends Task {
   category: Category | null;
