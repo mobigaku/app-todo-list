@@ -6,6 +6,7 @@ import { getTasks } from "@/app/lib/api";
 import { Task, Category } from "@/types/prisma";
 import { TaskDetailsModal } from "@/app/components/task-details-modal";
 import { useTasks } from "@/app/hooks/use-tasks";
+import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,15 +34,74 @@ interface TaskListProps {
   onStatusChange?: (task: TaskWithCategory) => void;
 }
 
-function TaskCard({ task, onClick }: { 
+function TaskCard({ task, onClick, onDelete }: { 
   task: TaskWithCategory; 
   onClick: () => void;
+  onDelete: () => void;
 }) {
+  const controls = useAnimation();
+  const [isDragging, setIsDragging] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState(0);
+
+  const triggerHaptic = () => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+  };
+
+  const handleDrag = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 100;
+    const progress = Math.min(Math.abs(info.offset.x) / threshold, 1);
+    setDeleteProgress(progress);
+    
+    if (progress >= 0.25 && progress < 0.3) triggerHaptic();
+    if (progress >= 0.5 && progress < 0.55) triggerHaptic();
+    if (progress >= 0.75 && progress < 0.8) triggerHaptic();
+  };
+
+  const handleDragEnd = async (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 100;
+    if (Math.abs(info.offset.x) > threshold) {
+      triggerHaptic(); // Final haptic feedback
+      await controls.start({ x: info.offset.x < 0 ? -500 : 500, opacity: 0 });
+      onDelete();
+    } else {
+      controls.start({ x: 0, opacity: 1 });
+    }
+    setIsDragging(false);
+    setDeleteProgress(0);
+  };
+
   return (
-    <div
-      className="rounded-lg border p-4 hover:bg-accent cursor-pointer"
-      onClick={onClick}
+    <motion.div
+      className="rounded-lg border p-4 hover:bg-accent cursor-pointer relative overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -300 }}
+      transition={{ duration: 0.2 }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      onDrag={handleDrag}
+      onDragStart={() => setIsDragging(true)}
+      onDragEnd={handleDragEnd}
+      onClick={() => {
+        if (!isDragging) onClick();
+      }}
+      whileDrag={{ cursor: "grabbing" }}
+      style={{ x: 0 }}
     >
+      {/* Delete progress indicator */}
+      {deleteProgress > 0 && (
+        <motion.div 
+          className="absolute inset-0 bg-red-500/10"
+          initial={false}
+          animate={{ 
+            opacity: deleteProgress,
+            background: deleteProgress > 0.75 ? "rgb(239 68 68 / 0.2)" : "rgb(239 68 68 / 0.1)"
+          }}
+        />
+      )}
+      
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">{task.name}</h3>
         <div className="flex gap-2">
@@ -60,7 +120,7 @@ function TaskCard({ task, onClick }: {
           {task.category?.name || "Sem categoria"}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -284,13 +344,16 @@ export function TaskList({ onEdit }: TaskListProps) {
             )}
           </div>
         ) : (
-          filteredTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onClick={() => handleTaskClick(task)}
-            />
-          ))
+          <AnimatePresence mode="popLayout">
+            {filteredTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onClick={() => handleTaskClick(task)}
+                onDelete={() => handleDelete(task)}
+              />
+            ))}
+          </AnimatePresence>
         )}
       </div>
 
