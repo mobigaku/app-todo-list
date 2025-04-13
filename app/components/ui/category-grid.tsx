@@ -1,60 +1,82 @@
 "use client";
 
-import { Category } from "@/types/prisma";
+import { Category, Task } from "@/types/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface CategoryGridProps {
   categories: Category[];
-  selectedCategory: Category | null;
-  onSelectCategory: (category: Category | null) => void;
+  tasks: Task[];
+  selectedCategoryId: string | null;
+  onCategorySelect: (categoryId: string | null) => void;
 }
 
 export function CategoryGrid({
   categories,
-  selectedCategory,
-  onSelectCategory,
+  tasks,
+  selectedCategoryId,
+  onCategorySelect,
 }: CategoryGridProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredCategories = categories.filter((category) =>
+    category.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getCategoryTaskCount = (categoryId: string) =>
+    tasks.filter((task) => task.categoryId === categoryId).length;
+
   return (
-    <ScrollArea className="h-[calc(100vh-12rem)] w-full rounded-md border">
-      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card
-          className={cn(
-            "cursor-pointer transition-colors hover:bg-muted/50",
-            selectedCategory === null && "bg-muted"
-          )}
-          onClick={() => onSelectCategory(null)}
-        >
-          <CardHeader>
-            <CardTitle>Todas as Tarefas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Visualize todas as suas tarefas
-            </p>
-          </CardContent>
-        </Card>
-        {categories.map((category) => (
+    <div className="space-y-4">
+      <Input
+        placeholder="Buscar categorias..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="max-w-sm"
+      />
+      <ScrollArea className="h-[calc(100vh-16rem)] w-full rounded-md border">
+        <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
           <Card
-            key={category.id}
             className={cn(
               "cursor-pointer transition-colors hover:bg-muted/50",
-              selectedCategory?.id === category.id && "bg-muted"
+              selectedCategoryId === null && "bg-muted"
             )}
-            onClick={() => onSelectCategory(category)}
+            onClick={() => onCategorySelect(null)}
           >
             <CardHeader>
-              <CardTitle>{category.name}</CardTitle>
+              <CardTitle>Todas as Tarefas</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Visualize as tarefas desta categoria
+                {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"} no total
               </p>
             </CardContent>
           </Card>
-        ))}
-      </div>
-    </ScrollArea>
+          {filteredCategories.map((category) => (
+            <Card
+              key={category.id}
+              className={cn(
+                "cursor-pointer transition-colors hover:bg-muted/50",
+                selectedCategoryId === category.id && "bg-muted"
+              )}
+              onClick={() => onCategorySelect(category.id)}
+            >
+              <CardHeader>
+                <CardTitle>{category.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  {getCategoryTaskCount(category.id)}{" "}
+                  {getCategoryTaskCount(category.id) === 1 ? "tarefa" : "tarefas"}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
   );
 } 

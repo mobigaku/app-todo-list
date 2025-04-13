@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { CategoryGrid } from "@/components/ui/category-grid";
-import { CategoryModal } from "@/components/ui/category-modal";
+import { CategoryGrid } from "@/app/components/ui/category-grid";
+import { CategoryModal } from "@/app/components/ui/category-modal";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useCategories } from "@/hooks/use-categories";
+import { useCategories } from "@/hooks/useCategories";
 import { useTasks } from "@/hooks/use-tasks";
 
 export default function CategoriesPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const { categories } = useCategories();
-  const { tasks } = useTasks(selectedCategoryId);
+  const { data: categories = [] } = useCategories();
+  const { tasks = [] } = useTasks(selectedCategoryId);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -26,8 +26,8 @@ export default function CategoriesPage() {
       </div>
 
       <CategoryGrid
-        categories={categories || []}
-        tasks={tasks || []}
+        categories={categories}
+        tasks={tasks}
         selectedCategoryId={selectedCategoryId}
         onCategorySelect={setSelectedCategoryId}
       />
