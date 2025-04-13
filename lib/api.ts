@@ -1,6 +1,6 @@
-import { Task } from "@prisma/client";
+import type { Task } from "@/types/prisma";
 
-export async function getTasks(categoryId?: string) {
+export async function getTasks(categoryId?: string): Promise<Task[]> {
   const url = categoryId
     ? `/api/tasks?categoryId=${categoryId}`
     : "/api/tasks";
@@ -11,7 +11,7 @@ export async function getTasks(categoryId?: string) {
   return response.json();
 }
 
-export async function getTask(id: string) {
+export async function getTask(id: string): Promise<Task> {
   const response = await fetch(`/api/tasks/${id}`);
   if (!response.ok) {
     throw new Error("Failed to fetch task");
@@ -19,7 +19,7 @@ export async function getTask(id: string) {
   return response.json();
 }
 
-export async function createTask(data: Partial<Task>) {
+export async function createTask(data: Partial<Task>): Promise<Task> {
   const response = await fetch("/api/tasks", {
     method: "POST",
     headers: {
@@ -33,7 +33,7 @@ export async function createTask(data: Partial<Task>) {
   return response.json();
 }
 
-export async function updateTask(id: string, data: Partial<Task>) {
+export async function updateTask(id: string, data: Partial<Task>): Promise<Task> {
   const response = await fetch(`/api/tasks/${id}`, {
     method: "PUT",
     headers: {
@@ -47,7 +47,7 @@ export async function updateTask(id: string, data: Partial<Task>) {
   return response.json();
 }
 
-export async function deleteTask(id: string) {
+export async function deleteTask(id: string): Promise<Task> {
   const response = await fetch(`/api/tasks/${id}`, {
     method: "DELETE",
   });
