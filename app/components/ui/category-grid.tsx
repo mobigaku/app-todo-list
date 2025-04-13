@@ -1,31 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Category, Task } from "@/types/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 interface CategoryGridProps {
   categories: Category[];
   tasks: Task[];
-  selectedCategoryId?: string | null;
+  selectedCategoryId: string | null;
+  onCategorySelect: (categoryId: string | null) => void;
 }
 
-export function CategoryGrid({ categories, tasks, selectedCategoryId }: CategoryGridProps) {
-  const router = useRouter();
-
+export function CategoryGrid({ categories, tasks, selectedCategoryId, onCategorySelect }: CategoryGridProps) {
   const allTasksCount = tasks.length;
   const getTaskCountForCategory = (categoryId: string) => {
     return tasks.filter(task => task.categoryId === categoryId).length;
-  };
-
-  const handleCategoryClick = (categoryId?: string) => {
-    if (categoryId) {
-      router.push(`/dashboard?category=${categoryId}`);
-    } else {
-      router.push("/dashboard");
-    }
   };
 
   return (
@@ -37,7 +27,7 @@ export function CategoryGrid({ categories, tasks, selectedCategoryId }: Category
             "cursor-pointer hover:bg-accent/50 transition-colors",
             !selectedCategoryId && "bg-accent"
           )}
-          onClick={() => handleCategoryClick()}
+          onClick={() => onCategorySelect(null)}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Todas as Categorias</CardTitle>
@@ -57,7 +47,7 @@ export function CategoryGrid({ categories, tasks, selectedCategoryId }: Category
               "cursor-pointer hover:bg-accent/50 transition-colors",
               selectedCategoryId === category.id && "bg-accent"
             )}
-            onClick={() => handleCategoryClick(category.id)}
+            onClick={() => onCategorySelect(category.id)}
           >
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">{category.name}</CardTitle>
