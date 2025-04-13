@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,13 +23,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useCategories } from "@/hooks/use-categories";
+import { useCategoryMutations } from "@/hooks/useCategories";
 
 const formSchema = z.object({
-  name: z.string().min(1, "Category name is required"),
+  name: z
+    .string()
+    .min(1, "O nome da categoria é obrigatório")
+    .max(50, "O nome da categoria não pode ter mais de 50 caracteres")
+    .refine((value) => /^[a-zA-ZÀ-ÿ0-9\s\-_]+$/.test(value), {
+      message: "O nome da categoria só pode conter letras, números, espaços, hífens e underscores",
+    }),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 interface CategoryModalProps {
   children: React.ReactNode;
@@ -36,22 +43,22 @@ interface CategoryModalProps {
 
 export function CategoryModal({ children }: CategoryModalProps) {
   const [open, setOpen] = useState(false);
-  const { createCategory, isCreating } = useCategories();
+  const { createCategory, isCreating } = useCategoryMutations();
 
-  const form = useForm<FormData>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
     },
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: FormValues) => {
     try {
       await createCategory(data.name);
       form.reset();
       setOpen(false);
-    } catch (err) {
-      console.error("Failed to create category:", err);
+    } catch (error) {
+      console.error("Failed to create category:", error);
     }
   };
 
@@ -60,9 +67,9 @@ export function CategoryModal({ children }: CategoryModalProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Category</DialogTitle>
+          <DialogTitle>Nova Categoria</DialogTitle>
           <DialogDescription>
-            Add a new category to organize your tasks.
+            Adicione uma nova categoria para organizar suas tarefas.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -72,20 +79,29 @@ export function CategoryModal({ children }: CategoryModalProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter category name" {...field} />
+                    <Input 
+                      placeholder="Digite o nome da categoria" 
+                      {...field}
+                      disabled={isCreating}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isCreating}>
-              {isCreating ? "Creating..." : "Create Category"}
-            </Button>
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={isCreating}
+              >
+                {isCreating ? "Criando..." : "Criar"}
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
-} 
+}
