@@ -64,6 +64,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+export type { FormValues };
+
 interface TaskFormProps {
   task?: Task;
   open: boolean;
