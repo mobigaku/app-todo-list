@@ -40,22 +40,35 @@ import {
 
 const formSchema = z.object({
   name: z.string().min(1, {
-    message: "Task name is required.",
+    message: "O nome da tarefa é obrigatório.",
+  }).max(100, {
+    message: "O nome da tarefa não pode ter mais de 100 caracteres.",
   }),
-  description: z.string().optional(),
+  description: z.string().max(500, {
+    message: "A descrição não pode ter mais de 500 caracteres.",
+  }).optional(),
   startDate: z.date({
-    required_error: "Start date is required.",
+    required_error: "A data de início é obrigatória.",
   }),
   endDate: z.date().optional(),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"], {
+    required_error: "A prioridade é obrigatória.",
+    invalid_type_error: "Selecione uma prioridade válida.",
+  }),
+  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETED"], {
+    required_error: "O status é obrigatório.",
+    invalid_type_error: "Selecione um status válido.",
+  }),
   categoryId: z.string().optional(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface TaskFormProps {
   task?: Task;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>;
+  onSubmit: (data: FormValues) => Promise<void>;
   categories: { id: string; name: string }[];
 }
 
@@ -66,7 +79,7 @@ export function TaskForm({
   onSubmit,
   categories,
 }: TaskFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: task?.name ?? "",
@@ -74,11 +87,12 @@ export function TaskForm({
       startDate: task?.startDate ?? new Date(),
       endDate: task?.endDate ?? undefined,
       priority: task?.priority ?? "MEDIUM",
+      status: task?.status ?? "NOT_STARTED",
       categoryId: task?.categoryId,
     },
   });
 
-  async function handleSubmit(values: z.infer<typeof formSchema>) {
+  async function handleSubmit(values: FormValues) {
     try {
       await onSubmit(values);
       form.reset();
@@ -92,11 +106,11 @@ export function TaskForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{task ? "Edit Task" : "Create Task"}</DialogTitle>
+          <DialogTitle>{task ? "Editar Tarefa" : "Criar Tarefa"}</DialogTitle>
           <DialogDescription>
             {task
-              ? "Edit your task details below."
-              : "Add a new task to your list."}
+              ? "Edite os detalhes da sua tarefa abaixo."
+              : "Adicione uma nova tarefa à sua lista."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -106,9 +120,9 @@ export function TaskForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter task name" {...field} />
+                    <Input placeholder="Digite o nome da tarefa" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,10 +133,10 @@ export function TaskForm({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Descrição</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter task description"
+                      placeholder="Digite a descrição da tarefa"
                       {...field}
                       value={field.value ?? ""}
                     />
@@ -136,7 +150,7 @@ export function TaskForm({
               name="startDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Start Date</FormLabel>
+                  <FormLabel>Data de Início</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -149,7 +163,7 @@ export function TaskForm({
                           {field.value ? (
                             format(field.value, "PPP")
                           ) : (
-                            <span>Pick a date</span>
+                            <span>Selecione uma data</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -176,7 +190,7 @@ export function TaskForm({
               name="endDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>End Date</FormLabel>
+                  <FormLabel>Data de Conclusão</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -189,7 +203,7 @@ export function TaskForm({
                           {field.value ? (
                             format(field.value, "PPP")
                           ) : (
-                            <span>Pick a date</span>
+                            <span>Selecione uma data</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -216,20 +230,45 @@ export function TaskForm({
               name="priority"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Priority</FormLabel>
+                  <FormLabel>Prioridade</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
+                        <SelectValue placeholder="Selecione a prioridade" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="LOW">Low</SelectItem>
-                      <SelectItem value="MEDIUM">Medium</SelectItem>
-                      <SelectItem value="HIGH">High</SelectItem>
+                      <SelectItem value="LOW">Baixa</SelectItem>
+                      <SelectItem value="MEDIUM">Média</SelectItem>
+                      <SelectItem value="HIGH">Alta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="NOT_STARTED">Não Iniciada</SelectItem>
+                      <SelectItem value="IN_PROGRESS">Em Andamento</SelectItem>
+                      <SelectItem value="COMPLETED">Concluída</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -241,14 +280,14 @@ export function TaskForm({
               name="categoryId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>Categoria</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder="Selecione uma categoria" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -263,9 +302,16 @@ export function TaskForm({
                 </FormItem>
               )}
             />
-            <div className="flex justify-end">
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancelar
+              </Button>
               <Button type="submit">
-                {task ? "Update Task" : "Create Task"}
+                {task ? "Salvar Alterações" : "Criar Tarefa"}
               </Button>
             </div>
           </form>
