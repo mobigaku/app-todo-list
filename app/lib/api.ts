@@ -1,4 +1,5 @@
 import { Category, Task } from "@/types/prisma";
+import type { TaskFormValues } from "@/app/types/form";
 
 export async function getTasks(): Promise<Task[]> {
   const response = await fetch("/api/tasks");
@@ -8,7 +9,7 @@ export async function getTasks(): Promise<Task[]> {
   return response.json();
 }
 
-export async function createTask(task: Omit<Task, "id" | "userId" | "createdAt" | "updatedAt">): Promise<Task> {
+export async function createTask(task: TaskFormValues): Promise<Task> {
   const response = await fetch("/api/tasks", {
     method: "POST",
     headers: {

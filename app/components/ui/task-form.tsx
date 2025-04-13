@@ -1,10 +1,10 @@
 "use client";
 
-import { Category, Priority, Status, Task } from "@/types/prisma";
+import { Category, Task } from "@/types/prisma";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui /button";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -13,8 +13,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CalendarIcon   } from "lucide-react";
-import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -24,57 +22,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { createTask } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import { useCreateTask } from "@/app/hooks/use-tasks";
+import type { TaskFormValues } from "@/app/types/form";
+import { ControllerRenderProps, UseFormStateReturn, ControllerFieldState } from "react-hook-form";
 
 const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  priority: z.nativeEnum(Priority),
-  status: z.nativeEnum(Status),
-  startDate: z.date().nullable(),
-  categoryId: z.string().nullable(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+  name: z.string().min(1, "Name is required"),
+  description: z.string().nullable().optional(),
+  startDate: z.date(),
+  endDate: z.date().nullable().optional(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "MAXIMUM"] as const),
+  status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const),
+  categoryId: z.string()
+}) satisfies z.ZodType<TaskFormValues>;
 
 interface TaskFormProps {
   task?: Task;
   categories: Category[];
 }
 
+interface FieldProps<T extends keyof TaskFormValues> {
+  field: ControllerRenderProps<TaskFormValues, T>;
+  fieldState: ControllerFieldState;
+  formState: UseFormStateReturn<TaskFormValues>;
+}
+
 export function TaskForm({ task, categories }: TaskFormProps) {
-  const { toast } = useToast();
   const router = useRouter();
-  const form = useForm<FormValues>({
+  const createTask = useCreateTask();
+  
+  const form = useForm<TaskFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: task?.title ?? "",
-      description: task?.description ?? "",
-      priority: task?.priority ?? Priority.MEDIUM,
-      status: task?.status ?? Status.TODO,
-      startDate: task?.startDate ? new Date(task.startDate) : null,
-      categoryId: task?.categoryId ?? null,
+      name: task?.name ?? "",
+      description: task?.description,
+      startDate: task?.startDate ? new Date(task.startDate) : new Date(),
+      endDate: task?.endDate ? new Date(task.endDate) : null,
+      priority: task?.priority ?? "LOW",
+      status: task?.status ?? "PENDING",
+      categoryId: task?.categoryId ?? ""
     },
   });
 
-  async function onSubmit(data: FormValues) {
+  async function onSubmit(data: TaskFormValues) {
     try {
-      await createTask(data);
-      toast({
-        title: "Success",
-        description: "Task created successfully",
-      });
+      await createTask.mutateAsync(data);
       router.refresh();
       form.reset();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create task",
-        variant: "destructive",
-      });
+      console.error("Failed to create task:", error);
     }
   }
 
@@ -83,12 +85,12 @@ export function TaskForm({ task, categories }: TaskFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="title"
-          render={({ field }) => (
+          name="name"
+          render={({ field }: FieldProps<"name">) => (
             <FormItem>
-              <FormLabel>Title</FormLabel>
+              <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input placeholder="Task title" {...field} />
+                <Input placeholder="Task name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -98,11 +100,15 @@ export function TaskForm({ task, categories }: TaskFormProps) {
         <FormField
           control={form.control}
           name="description"
-          render={({ field }) => (
+          render={({ field }: FieldProps<"description">) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="Task description" {...field} />
+                <Textarea 
+                  placeholder="Task description" 
+                  {...field} 
+                  value={field.value ?? ""} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -112,7 +118,7 @@ export function TaskForm({ task, categories }: TaskFormProps) {
         <FormField
           control={form.control}
           name="priority"
-          render={({ field }) => (
+          render={({ field }: FieldProps<"priority">) => (
             <FormItem>
               <FormLabel>Priority</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -122,11 +128,10 @@ export function TaskForm({ task, categories }: TaskFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.values(Priority).map((priority) => (
-                    <SelectItem key={priority} value={priority}>
-                      {priority}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="LOW">Low</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                  <SelectItem value="MAXIMUM">Maximum</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -137,7 +142,7 @@ export function TaskForm({ task, categories }: TaskFormProps) {
         <FormField
           control={form.control}
           name="status"
-          render={({ field }) => (
+          render={({ field }: FieldProps<"status">) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -147,11 +152,10 @@ export function TaskForm({ task, categories }: TaskFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.values(Status).map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -162,12 +166,12 @@ export function TaskForm({ task, categories }: TaskFormProps) {
         <FormField
           control={form.control}
           name="categoryId"
-          render={({ field }) => (
+          render={({ field }: FieldProps<"categoryId">) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
-                defaultValue={field.value ?? undefined}
+                defaultValue={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -187,24 +191,89 @@ export function TaskForm({ task, categories }: TaskFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="startDate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Start Date</FormLabel>
-              <FormControl>
-                <DatePicker
-                  date={field.value}
-                  setDate={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }: FieldProps<"startDate">) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Start Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit">Submit</Button>
+          <FormField
+            control={form.control}
+            name="endDate"
+            render={({ field }: FieldProps<"endDate">) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>End Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ?? undefined}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Button type="submit" disabled={createTask.isPending}>
+          {createTask.isPending ? "Creating..." : "Create Task"}
+        </Button>
       </form>
     </Form>
   );
