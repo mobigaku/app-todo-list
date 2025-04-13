@@ -180,7 +180,7 @@ export function TaskForm({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
+                        disabled={(date: Date) =>
                           date < new Date("1900-01-01")
                         }
                         initialFocus
@@ -220,7 +220,7 @@ export function TaskForm({
                         mode="single"
                         selected={field.value ?? undefined}
                         onSelect={field.onChange}
-                        disabled={(date) =>
+                        disabled={(date: Date) =>
                           date < form.getValues("startDate")
                         }
                         initialFocus
