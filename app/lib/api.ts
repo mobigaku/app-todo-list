@@ -1,7 +1,11 @@
 import { Category, Task } from "@/types/prisma";
 import type { TaskFormValues } from "@/app/types/form";
 
-export async function getTasks(): Promise<Task[]> {
+interface TaskWithCategory extends Task {
+  category: Category | null;
+}
+
+export async function getTasks(): Promise<TaskWithCategory[]> {
   const response = await fetch("/api/tasks");
   if (!response.ok) {
     throw new Error("Failed to fetch tasks");
@@ -19,6 +23,30 @@ export async function createTask(task: TaskFormValues): Promise<Task> {
   });
   if (!response.ok) {
     throw new Error("Failed to create task");
+  }
+  return response.json();
+}
+
+export async function updateTask(taskId: string, task: TaskFormValues): Promise<Task> {
+  const response = await fetch(`/api/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(task),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update task");
+  }
+  return response.json();
+}
+
+export async function deleteTask(taskId: string): Promise<Task> {
+  const response = await fetch(`/api/tasks/${taskId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete task");
   }
   return response.json();
 }

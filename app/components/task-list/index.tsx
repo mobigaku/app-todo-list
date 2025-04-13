@@ -17,17 +17,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import type { Task } from "@/types/prisma";
+import type { Task, Category } from "@/types/prisma";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EyeIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getTasks } from "@/app/lib/api";
+import { TaskDetailsModal } from "@/app/components/task-details-modal";
 
 type SortField = "name" | "endDate" | "priority" | "status";
 type SortOrder = "asc" | "desc";
 type Priority = "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
 type Status = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+interface TaskWithCategory extends Task {
+  category: Category | null;
+}
 
 const priorityLabels: Record<Priority, string> = {
   LOW: "Baixa",
@@ -51,9 +56,9 @@ const priorityOrder: Record<Priority, number> = {
 };
 
 interface TaskListProps {
-  onEdit?: (task: Task) => void;
-  onDelete?: (task: Task) => void;
-  onStatusChange?: (task: Task, status: Status) => void;
+  onEdit?: (task: TaskWithCategory) => void;
+  onDelete?: (task: TaskWithCategory) => void;
+  onStatusChange?: (task: TaskWithCategory, status: Status) => void;
 }
 
 export function TaskList({ onEdit, onDelete }: TaskListProps) {
@@ -61,12 +66,14 @@ export function TaskList({ onEdit, onDelete }: TaskListProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | Priority>("all");
-  const { data: tasks, isLoading, error } = useQuery<Task[]>({
+  const [selectedTask, setSelectedTask] = useState<TaskWithCategory | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const { data: tasks, isLoading, error } = useQuery<TaskWithCategory[]>({
     queryKey: ["tasks"],
     queryFn: getTasks,
   });
 
-  const sortTasks = (a: Task, b: Task) => {
+  const sortTasks = (a: TaskWithCategory, b: TaskWithCategory) => {
     if (sortField === "name") {
       return sortOrder === "asc"
         ? a.name.localeCompare(b.name)
@@ -92,7 +99,7 @@ export function TaskList({ onEdit, onDelete }: TaskListProps) {
     return 0;
   };
 
-  const filterTasks = (task: Task) => {
+  const filterTasks = (task: TaskWithCategory) => {
     if (statusFilter !== "all" && task.status !== statusFilter) return false;
     if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
     return true;
@@ -119,6 +126,14 @@ export function TaskList({ onEdit, onDelete }: TaskListProps) {
 
   return (
     <div className="space-y-4">
+      <TaskDetailsModal
+        task={selectedTask}
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+
       <div className="flex gap-4">
         <Select
           value={statusFilter}
@@ -224,7 +239,7 @@ export function TaskList({ onEdit, onDelete }: TaskListProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTasks.map((task: Task) => (
+              filteredTasks.map((task: TaskWithCategory) => (
                 <TableRow key={task.id}>
                   <TableCell>{task.name}</TableCell>
                   <TableCell>
@@ -239,7 +254,10 @@ export function TaskList({ onEdit, onDelete }: TaskListProps) {
                       variant="ghost"
                       size="icon"
                       title="Visualizar"
-                      onClick={() => onEdit?.(task)}
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setIsDetailsOpen(true);
+                      }}
                     >
                       <EyeIcon className="h-4 w-4" />
                     </Button>
