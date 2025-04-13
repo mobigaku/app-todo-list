@@ -1,7 +1,7 @@
 "use client";
 
 import { useFilters } from "@/app/hooks/use-filters";
-import { Priority, Status } from "@/app/types/prisma";
+import { Priority, Status, Category } from "@/app/types/prisma";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCategories } from "@/hooks/useCategories";
 
 export function TaskFilters() {
   const {
@@ -29,8 +30,10 @@ export function TaskFilters() {
     setPriority,
     setDateRange,
     setSearch,
+    setCategory,
     clear,
   } = useFilters();
+  const { data: categories = [] } = useCategories();
 
   return (
     <div className="space-y-4">
@@ -81,6 +84,23 @@ export function TaskFilters() {
             <SelectItem value="MEDIUM">Média</SelectItem>
             <SelectItem value="HIGH">Alta</SelectItem>
             <SelectItem value="MAXIMUM">Máxima</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.categoryId}
+          onValueChange={(value: string) => setCategory(value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as categorias</SelectItem>
+            {categories.map((category: Category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

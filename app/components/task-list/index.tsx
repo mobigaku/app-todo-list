@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TaskFilters } from "@/app/components/task-filters";
 import { useFilters } from "@/app/hooks/use-filters";
+import { X } from "lucide-react";
 
 interface TaskWithCategory extends Task {
   category: Category | null;
@@ -63,12 +64,99 @@ function TaskCard({ task, onClick }: {
   );
 }
 
+function ActiveFilters({ filters, onClearFilter }: { 
+  filters: {
+    status: string;
+    priority: string;
+    dateRange: {
+      startDate: string | null;
+      endDate: string | null;
+    };
+    categoryId: string;
+    search: string;
+  }; 
+  onClearFilter: (key: string) => void;
+}) {
+  const activeFilters = [];
+
+  if (filters.status !== "all") {
+    activeFilters.push({
+      key: "status",
+      label: `Status: ${filters.status === "PENDING" ? "Não Iniciada" :
+        filters.status === "IN_PROGRESS" ? "Em Andamento" :
+        filters.status === "COMPLETED" ? "Concluída" :
+        filters.status === "CANCELLED" ? "Cancelada" : filters.status}`,
+    });
+  }
+
+  if (filters.priority !== "all") {
+    activeFilters.push({
+      key: "priority",
+      label: `Prioridade: ${filters.priority === "LOW" ? "Baixa" :
+        filters.priority === "MEDIUM" ? "Média" :
+        filters.priority === "HIGH" ? "Alta" :
+        filters.priority === "MAXIMUM" ? "Máxima" : filters.priority}`,
+    });
+  }
+
+  if (filters.dateRange.startDate || filters.dateRange.endDate) {
+    const dateLabel = [];
+    if (filters.dateRange.startDate) {
+      dateLabel.push(`De: ${format(new Date(filters.dateRange.startDate), "PPP", { locale: ptBR })}`);
+    }
+    if (filters.dateRange.endDate) {
+      dateLabel.push(`Até: ${format(new Date(filters.dateRange.endDate), "PPP", { locale: ptBR })}`);
+    }
+    activeFilters.push({
+      key: "dateRange",
+      label: dateLabel.join(" "),
+    });
+  }
+
+  if (filters.categoryId !== "all") {
+    activeFilters.push({
+      key: "categoryId",
+      label: "Categoria selecionada",
+    });
+  }
+
+  if (filters.search) {
+    activeFilters.push({
+      key: "search",
+      label: `Pesquisa: ${filters.search}`,
+    });
+  }
+
+  if (activeFilters.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {activeFilters.map((filter) => (
+        <Badge
+          key={filter.key}
+          variant="secondary"
+          className="flex items-center gap-1"
+        >
+          {filter.label}
+          <X
+            className="h-3 w-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClearFilter(filter.key);
+            }}
+          />
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 export function TaskList({ onEdit }: TaskListProps) {
   const [selectedTask, setSelectedTask] = useState<TaskWithCategory | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { deleteTask, isLoading } = useTasks();
-  const { filters } = useFilters();
+  const { filters, setStatus, setPriority, setDateRange, setCategory, setSearch, clear } = useFilters();
 
   const { data: tasks = [], isLoading: isLoadingTasks } = useQuery<TaskWithCategory[]>({
     queryKey: ["tasks"],
@@ -125,6 +213,26 @@ export function TaskList({ onEdit }: TaskListProps) {
     return true;
   });
 
+  const handleClearFilter = (key: string) => {
+    switch (key) {
+      case "status":
+        setStatus("all");
+        break;
+      case "priority":
+        setPriority("all");
+        break;
+      case "dateRange":
+        setDateRange({ startDate: null, endDate: null });
+        break;
+      case "categoryId":
+        setCategory("all");
+        break;
+      case "search":
+        setSearch("");
+        break;
+    }
+  };
+
   const handleTaskClick = (task: TaskWithCategory) => {
     setSelectedTask(task);
     setIsDetailsOpen(true);
@@ -156,10 +264,24 @@ export function TaskList({ onEdit }: TaskListProps) {
     <>
       <TaskFilters />
 
+      <ActiveFilters filters={filters} onClearFilter={handleClearFilter} />
+
       <div className="mt-6 space-y-4">
         {filteredTasks.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            Nenhuma tarefa encontrada.
+            {filters.status !== "all" || filters.priority !== "all" || filters.dateRange.startDate || filters.dateRange.endDate || filters.categoryId !== "all" || filters.search ? (
+              <>
+                <p>Nenhuma tarefa corresponde aos filtros selecionados.</p>
+                <button
+                  onClick={() => clear()}
+                  className="text-primary hover:underline mt-2"
+                >
+                  Limpar todos os filtros
+                </button>
+              </>
+            ) : (
+              "Nenhuma tarefa encontrada."
+            )}
           </div>
         ) : (
           filteredTasks.map((task) => (
