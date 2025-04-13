@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { ReduxProvider } from "@/components/providers/redux-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "sonner";
+import { Layout } from "@/app/components/layout/Layout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,7 +32,9 @@ export default function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                {children}
+                <Layout>
+                  {children}
+                </Layout>
                 <Toaster richColors closeButton position="top-right" />
               </ThemeProvider>
             </QueryProvider>
