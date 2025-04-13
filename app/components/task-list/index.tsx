@@ -7,6 +7,12 @@ import { Task, Category } from "@/types/prisma";
 import { TaskDetailsModal } from "@/app/components/task-details-modal";
 import { useTasks } from "@/app/hooks/use-tasks";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { useFilters } from "@/app/hooks/use-filters";
+import { TaskFilters } from "@/app/components/task-filters";
+import { X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,12 +23,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { TaskFilters } from "@/app/components/task-filters";
-import { useFilters } from "@/app/hooks/use-filters";
-import { X } from "lucide-react";
 
 interface TaskWithCategory extends Task {
   category: Category | null;
@@ -42,6 +42,7 @@ function TaskCard({ task, onClick, onDelete }: {
   const controls = useAnimation();
   const [isDragging, setIsDragging] = useState(false);
   const [deleteProgress, setDeleteProgress] = useState(0);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const triggerHaptic = () => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -62,9 +63,10 @@ function TaskCard({ task, onClick, onDelete }: {
   const handleDragEnd = async (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
     if (Math.abs(info.offset.x) > threshold) {
-      triggerHaptic(); // Final haptic feedback
-      await controls.start({ x: info.offset.x < 0 ? -500 : 500, opacity: 0 });
-      onDelete();
+      triggerHaptic();
+      setShowDeleteDialog(true);
+      // Reset position smoothly
+      controls.start({ x: 0, opacity: 1 });
     } else {
       controls.start({ x: 0, opacity: 1 });
     }
@@ -72,59 +74,85 @@ function TaskCard({ task, onClick, onDelete }: {
     setDeleteProgress(0);
   };
 
+  const handleConfirmDelete = () => {
+    controls.start({ x: -500, opacity: 0 }).then(() => {
+      onDelete();
+      setShowDeleteDialog(false);
+    });
+  };
+
   return (
-    <motion.div
-      className="rounded-lg border p-4 hover:bg-accent cursor-pointer relative overflow-hidden"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -300 }}
-      transition={{ duration: 0.2 }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      onDrag={handleDrag}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={handleDragEnd}
-      onClick={() => {
-        if (!isDragging) onClick();
-      }}
-      whileDrag={{ cursor: "grabbing" }}
-      style={{ x: 0 }}
-    >
-      {/* Delete progress indicator */}
-      {deleteProgress > 0 && (
-        <motion.div 
-          className="absolute inset-0 bg-red-500/10"
-          initial={false}
-          animate={{ 
-            opacity: deleteProgress,
-            background: deleteProgress > 0.75 ? "rgb(239 68 68 / 0.2)" : "rgb(239 68 68 / 0.1)"
-          }}
-        />
-      )}
-      
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">{task.name}</h3>
-        <div className="flex gap-2">
-          <Badge variant="outline">{task.priority}</Badge>
-          <Badge>{task.status}</Badge>
+    <>
+      <motion.div
+        className="rounded-lg border p-4 hover:bg-accent cursor-pointer relative overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, x: -300 }}
+        transition={{ duration: 0.2 }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        onDrag={handleDrag}
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={handleDragEnd}
+        onClick={() => {
+          if (!isDragging) onClick();
+        }}
+        whileDrag={{ cursor: "grabbing" }}
+        style={{ x: 0 }}
+      >
+        {/* Delete progress indicator */}
+        {deleteProgress > 0 && (
+          <motion.div 
+            className="absolute inset-0 bg-red-500/10"
+            initial={false}
+            animate={{ 
+              opacity: deleteProgress,
+              background: deleteProgress > 0.75 ? "rgb(239 68 68 / 0.2)" : "rgb(239 68 68 / 0.1)"
+            }}
+          />
+        )}
+        
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">{task.name}</h3>
+          <div className="flex gap-2">
+            <Badge variant="outline">{task.priority}</Badge>
+            <Badge>{task.status}</Badge>
+          </div>
         </div>
-      </div>
-      <p className="text-sm text-muted-foreground mt-2">
-        {task.description || "Sem descrição"}
-      </p>
-      <div className="flex justify-between items-center mt-4">
-        <div className="text-sm text-muted-foreground">
-          Conclusão: {task.endDate ? format(new Date(task.endDate), "PPP", { locale: ptBR }) : "Não definida"}
+        <p className="text-sm text-muted-foreground mt-2">
+          {task.description || "Sem descrição"}
+        </p>
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-muted-foreground">
+            Conclusão: {task.endDate ? format(new Date(task.endDate), "PPP", { locale: ptBR }) : "Não definida"}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {task.category?.name || "Sem categoria"}
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {task.category?.name || "Sem categoria"}
-        </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
-function ActiveFilters({ filters, onClearFilter }: { 
+interface ActiveFiltersProps {
   filters: {
     status: string;
     priority: string;
@@ -134,9 +162,11 @@ function ActiveFilters({ filters, onClearFilter }: {
     };
     categoryId: string;
     search: string;
-  }; 
+  };
   onClearFilter: (key: string) => void;
-}) {
+}
+
+function ActiveFilters({ filters, onClearFilter }: ActiveFiltersProps) {
   const activeFilters = [];
 
   if (filters.status !== "all") {
@@ -202,7 +232,7 @@ function ActiveFilters({ filters, onClearFilter }: {
             className="h-3 w-3 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
-              onClearFilter(filter.key);
+              onClearFilter(filter.key as string);
             }}
           />
         </Badge>
@@ -212,69 +242,28 @@ function ActiveFilters({ filters, onClearFilter }: {
 }
 
 export function TaskList({ onEdit }: TaskListProps) {
-  const [selectedTask, setSelectedTask] = useState<TaskWithCategory | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const { deleteTask, isLoading } = useTasks();
-  const { filters, setStatus, setPriority, setDateRange, setCategory, setSearch, clear } = useFilters();
-
-  const { data: tasks = [], isLoading: isLoadingTasks } = useQuery<TaskWithCategory[]>({
+  const { data: tasks } = useQuery<TaskWithCategory[]>({
     queryKey: ["tasks"],
     queryFn: getTasks,
   });
 
-  const filteredTasks = tasks.filter((task) => {
-    // Filter by status
-    if (filters.status !== "all" && task.status !== filters.status) {
-      return false;
-    }
+  const [selectedTask, setSelectedTask] = useState<TaskWithCategory | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const { deleteTask } = useTasks();
+  const { filters, setStatus, setPriority, setDateRange, setCategory, setSearch, clear } = useFilters();
 
-    // Filter by priority
-    if (filters.priority !== "all" && task.priority !== filters.priority) {
-      return false;
-    }
+  const handleTaskClick = (task: TaskWithCategory) => {
+    setSelectedTask(task);
+    setIsDetailsOpen(true);
+  };
 
-    // Filter by date range
-    if (filters.dateRange.startDate) {
-      const startDate = new Date(filters.dateRange.startDate);
-      const taskStartDate = new Date(task.startDate);
-      if (taskStartDate < startDate) {
-        return false;
-      }
-    }
+  const handleDelete = (task: TaskWithCategory) => {
+    deleteTask(task.id);
+    setIsDetailsOpen(false);
+  };
 
-    if (filters.dateRange.endDate) {
-      const endDate = new Date(filters.dateRange.endDate);
-      const taskEndDate = task.endDate ? new Date(task.endDate) : null;
-      if (taskEndDate && taskEndDate > endDate) {
-        return false;
-      }
-    }
-
-    // Filter by category
-    if (filters.categoryId !== "all" && task.categoryId !== filters.categoryId) {
-      return false;
-    }
-
-    // Filter by search term
-    if (filters.search) {
-      const searchTerm = filters.search.toLowerCase();
-      const taskName = task.name.toLowerCase();
-      const taskDescription = task.description?.toLowerCase() || "";
-      const categoryName = task.category?.name.toLowerCase() || "";
-
-      return (
-        taskName.includes(searchTerm) ||
-        taskDescription.includes(searchTerm) ||
-        categoryName.includes(searchTerm)
-      );
-    }
-
-    return true;
-  });
-
-  const handleClearFilter = (key: string) => {
-    switch (key) {
+  const handleClearFilter = (type: keyof typeof filters) => {
+    switch (type) {
       case "status":
         setStatus("all");
         break;
@@ -293,32 +282,7 @@ export function TaskList({ onEdit }: TaskListProps) {
     }
   };
 
-  const handleTaskClick = (task: TaskWithCategory) => {
-    setSelectedTask(task);
-    setIsDetailsOpen(true);
-  };
-
-  const handleEdit = (task: TaskWithCategory) => {
-    setIsDetailsOpen(false);
-    onEdit?.(task);
-  };
-
-  const handleDelete = (task: TaskWithCategory) => {
-    setSelectedTask(task);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (selectedTask) {
-      deleteTask(selectedTask.id);
-      setIsDeleteDialogOpen(false);
-      setIsDetailsOpen(false);
-    }
-  };
-
-  if (isLoadingTasks) {
-    return <div>Carregando...</div>;
-  }
+  const filteredTasks = tasks || [];
 
   return (
     <>
@@ -358,33 +322,11 @@ export function TaskList({ onEdit }: TaskListProps) {
       </div>
 
       <TaskDetailsModal
-        task={selectedTask}
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        task={selectedTask}
+        onEdit={onEdit}
       />
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Tarefa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir a tarefa &ldquo;{selectedTask?.name}&rdquo;? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading.delete}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              disabled={isLoading.delete}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              {isLoading.delete ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 } 
