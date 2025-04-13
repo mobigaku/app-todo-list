@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Priority, Status } from "@/app/types/prisma";
+import { Priority, Status } from "@/types/prisma";
 
 interface DateRange {
   startDate: string | null;
@@ -26,7 +26,7 @@ const initialState: FilterState = {
 };
 
 export const filterSlice = createSlice({
-  name: "filters",
+  name: "filter",
   initialState,
   reducers: {
     setStatusFilter: (state, action: PayloadAction<Status | "all">) => {

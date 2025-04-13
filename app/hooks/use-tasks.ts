@@ -1,27 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createTask, updateTask, deleteTask } from "@/app/lib/api";
 import type { TaskFormValues } from "@/app/types/form";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 export function useTasks() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const createTaskMutation = useMutation({
     mutationFn: createTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      toast({
-        title: "Sucesso",
-        description: "Tarefa criada com sucesso",
-      });
+      toast.success("Tarefa criada com sucesso");
     },
     onError: () => {
-      toast({
-        title: "Erro",
-        description: "Erro ao criar tarefa",
-        variant: "destructive",
-      });
+      toast.error("Erro ao criar tarefa");
     },
   });
 
@@ -30,17 +22,10 @@ export function useTasks() {
       updateTask(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      toast({
-        title: "Sucesso",
-        description: "Tarefa atualizada com sucesso",
-      });
+      toast.success("Tarefa atualizada com sucesso");
     },
     onError: () => {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar tarefa",
-        variant: "destructive",
-      });
+      toast.error("Erro ao atualizar tarefa");
     },
   });
 
@@ -48,17 +33,10 @@ export function useTasks() {
     mutationFn: deleteTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      toast({
-        title: "Sucesso",
-        description: "Tarefa excluída com sucesso",
-      });
+      toast.success("Tarefa excluída com sucesso");
     },
     onError: () => {
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir tarefa",
-        variant: "destructive",
-      });
+      toast.error("Erro ao excluir tarefa");
     },
   });
 
