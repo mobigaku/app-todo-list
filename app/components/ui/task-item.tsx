@@ -1,6 +1,6 @@
 import { Task } from "@/types/prisma";
-import { Badge } from "@/components/ui/badge";
-import { TaskMenu } from "@/components/ui/task-menu";
+import { Badge } from "./badge";
+import { TaskMenu } from "./task-menu";
 import { format } from "date-fns";
 
 interface TaskItemProps {
