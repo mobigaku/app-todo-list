@@ -1,19 +1,10 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { Category, Priority, Status, Task } from "@/types/prisma";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { Task } from "@/types/prisma";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui /button";
 import {
   Form,
   FormControl,
@@ -22,14 +13,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { CalendarIcon   } from "lucide-react";
+import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -37,295 +24,188 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { createTask } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
-  name: z.string().min(1, {
-    message: "O nome da tarefa é obrigatório.",
-  }).max(100, {
-    message: "O nome da tarefa não pode ter mais de 100 caracteres.",
-  }),
-  description: z.string().max(500, {
-    message: "A descrição não pode ter mais de 500 caracteres.",
-  }).optional(),
-  startDate: z.date({
-    required_error: "A data de início é obrigatória.",
-  }),
-  endDate: z.date().optional(),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH"], {
-    required_error: "A prioridade é obrigatória.",
-    invalid_type_error: "Selecione uma prioridade válida.",
-  }),
-  status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"], {
-    required_error: "O status é obrigatório.",
-    invalid_type_error: "Selecione um status válido.",
-  }),
-  categoryId: z.string().optional(),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  priority: z.nativeEnum(Priority),
+  status: z.nativeEnum(Status),
+  startDate: z.date().nullable(),
+  categoryId: z.string().nullable(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export type { FormValues };
-
 interface TaskFormProps {
   task?: Task;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: FormValues) => Promise<void>;
-  categories: { id: string; name: string }[];
+  categories: Category[];
 }
 
-export function TaskForm({
-  task,
-  open,
-  onOpenChange,
-  onSubmit,
-  categories,
-}: TaskFormProps) {
+export function TaskForm({ task, categories }: TaskFormProps) {
+  const { toast } = useToast();
+  const router = useRouter();
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: task ? {
-      name: task.name,
-      description: task.description ?? "",
-      startDate: task.startDate,
-      endDate: task.endDate ?? undefined,
-      priority: task.priority as FormValues["priority"],
-      status: task.status as FormValues["status"],
-      categoryId: task.categoryId ?? undefined,
-    } : {
-      name: "",
-      description: "",
-      startDate: new Date(),
-      priority: "MEDIUM" as const,
-      status: "PENDING" as const,
+    defaultValues: {
+      title: task?.title ?? "",
+      description: task?.description ?? "",
+      priority: task?.priority ?? Priority.MEDIUM,
+      status: task?.status ?? Status.TODO,
+      startDate: task?.startDate ? new Date(task.startDate) : null,
+      categoryId: task?.categoryId ?? null,
     },
   });
 
-  const handleFormSubmit = form.handleSubmit(async (values: FormValues) => {
+  async function onSubmit(data: FormValues) {
     try {
-      await onSubmit(values);
+      await createTask(data);
+      toast({
+        title: "Success",
+        description: "Task created successfully",
+      });
+      router.refresh();
       form.reset();
-      onOpenChange(false);
     } catch (error) {
-      console.error("Failed to save task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create task",
+        variant: "destructive",
+      });
     }
-  });
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{task ? "Editar Tarefa" : "Criar Tarefa"}</DialogTitle>
-          <DialogDescription>
-            {task
-              ? "Edite os detalhes da sua tarefa abaixo."
-              : "Adicione uma nova tarefa à sua lista."}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={handleFormSubmit} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Digite o nome da tarefa" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Digite a descrição da tarefa"
-                      {...field}
-                      value={field.value ?? ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Data de Início</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={`w-full pl-3 text-left font-normal ${
-                            !field.value && "text-muted-foreground"
-                          }`}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date: Date) =>
-                          date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="endDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Data de Conclusão</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={`w-full pl-3 text-left font-normal ${
-                            !field.value && "text-muted-foreground"
-                          }`}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value ?? undefined}
-                        onSelect={field.onChange}
-                        disabled={(date: Date) =>
-                          date < form.getValues("startDate")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prioridade</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a prioridade" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="LOW">Baixa</SelectItem>
-                      <SelectItem value="MEDIUM">Média</SelectItem>
-                      <SelectItem value="HIGH">Alta</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="PENDING">Não Iniciada</SelectItem>
-                      <SelectItem value="IN_PROGRESS">Em Andamento</SelectItem>
-                      <SelectItem value="COMPLETED">Concluída</SelectItem>
-                      <SelectItem value="CANCELLED">Cancelada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="categoryId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Task title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Task description" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Priority</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Object.values(Priority).map((priority) => (
+                    <SelectItem key={priority} value={priority}>
+                      {priority}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Object.values(Status).map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="categoryId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value ?? undefined}
               >
-                Cancelar
-              </Button>
-              <Button type="submit">
-                {task ? "Salvar Alterações" : "Criar Tarefa"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="startDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Start Date</FormLabel>
+              <FormControl>
+                <DatePicker
+                  date={field.value}
+                  setDate={field.onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit">Submit</Button>
+      </form>
+    </Form>
   );
 } 

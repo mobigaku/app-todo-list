@@ -1,9 +1,12 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createTask, getTasks } from "@/lib/api";
 import type { FormValues } from "@/components/ui/task-form";
 
 export function useTasks() {
-  return getTasks();
+  return useQuery({
+    queryKey: ["tasks"],
+    queryFn: getTasks,
+  });
 }
 
 export function useCreateTask() {
