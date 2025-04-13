@@ -1,45 +1,43 @@
+"use client";
+
 import { MoreVertical } from "lucide-react"
 import { Task } from "@/types/prisma"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./dropdown-menu"
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
 
 interface TaskMenuProps {
   task: Task
-  onEdit?: () => void
-  onDelete?: () => void
-  onStatusChange?: (status: Task['status']) => void
+  onComplete: (id: string) => Promise<void>
+  onDelete: (id: string) => Promise<void>
+  onEdit: (task: Task) => void
 }
 
-export function TaskMenu({ task, onEdit, onDelete, onStatusChange }: TaskMenuProps) {
-  const isCompleted = task.status === 'COMPLETED'
-  
+export function TaskMenu({ task, onComplete, onDelete, onEdit }: TaskMenuProps) {
+  const isCompleted = task.status === "COMPLETED";
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md border transition-colors hover:bg-muted">
-        <MoreVertical className="h-4 w-4" />
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MoreVertical className="h-4 w-4" />
+          <span className="sr-only">Open menu</span>
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem
-          onClick={() => onStatusChange?.(isCompleted ? 'IN_PROGRESS' : 'COMPLETED')}
-          className="cursor-pointer"
-        >
-          Mark as {isCompleted ? "in progress" : "complete"}
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onComplete(task.id)}>
+          {isCompleted ? "Mark as incomplete" : "Mark as complete"}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={onEdit}
-          className="cursor-pointer"
-        >
+        <DropdownMenuItem onClick={() => onEdit(task)}>
           Edit task
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={onDelete}
-          className="cursor-pointer text-destructive focus:text-destructive"
+          className="text-destructive"
+          onClick={() => onDelete(task.id)}
         >
           Delete task
         </DropdownMenuItem>
