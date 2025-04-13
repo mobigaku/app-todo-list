@@ -38,6 +38,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type FormValues = {
+  name: string;
+  description?: string;
+  startDate: Date;
+  endDate?: Date;
+  priority: "LOW" | "MEDIUM" | "HIGH";
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  categoryId?: string;
+};
+
 const formSchema = z.object({
   name: z.string().min(1, {
     message: "O nome da tarefa é obrigatório.",
@@ -55,14 +65,12 @@ const formSchema = z.object({
     required_error: "A prioridade é obrigatória.",
     invalid_type_error: "Selecione uma prioridade válida.",
   }),
-  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETED"], {
+  status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"], {
     required_error: "O status é obrigatório.",
     invalid_type_error: "Selecione um status válido.",
   }),
   categoryId: z.string().optional(),
 });
-
-type FormValues = z.infer<typeof formSchema>;
 
 interface TaskFormProps {
   task?: Task;
@@ -87,7 +95,7 @@ export function TaskForm({
       startDate: task?.startDate ?? new Date(),
       endDate: task?.endDate ?? undefined,
       priority: task?.priority ?? "MEDIUM",
-      status: task?.status ?? "NOT_STARTED",
+      status: task?.status ?? "PENDING",
       categoryId: task?.categoryId,
     },
   });
@@ -266,9 +274,10 @@ export function TaskForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="NOT_STARTED">Não Iniciada</SelectItem>
+                      <SelectItem value="PENDING">Não Iniciada</SelectItem>
                       <SelectItem value="IN_PROGRESS">Em Andamento</SelectItem>
                       <SelectItem value="COMPLETED">Concluída</SelectItem>
+                      <SelectItem value="CANCELLED">Cancelada</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
