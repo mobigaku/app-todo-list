@@ -38,16 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type FormValues = {
-  name: string;
-  description?: string;
-  startDate: Date;
-  endDate?: Date;
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  categoryId?: string;
-};
-
 const formSchema = z.object({
   name: z.string().min(1, {
     message: "O nome da tarefa é obrigatório.",
@@ -72,6 +62,8 @@ const formSchema = z.object({
   categoryId: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 interface TaskFormProps {
   task?: Task;
   open: boolean;
@@ -89,18 +81,24 @@ export function TaskForm({
 }: TaskFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: task?.name ?? "",
-      description: task?.description ?? "",
-      startDate: task?.startDate ?? new Date(),
-      endDate: task?.endDate ?? undefined,
-      priority: task?.priority ?? "MEDIUM",
-      status: task?.status ?? "PENDING",
-      categoryId: task?.categoryId,
+    defaultValues: task ? {
+      name: task.name,
+      description: task.description ?? "",
+      startDate: task.startDate,
+      endDate: task.endDate ?? undefined,
+      priority: task.priority as FormValues["priority"],
+      status: task.status as FormValues["status"],
+      categoryId: task.categoryId ?? undefined,
+    } : {
+      name: "",
+      description: "",
+      startDate: new Date(),
+      priority: "MEDIUM" as const,
+      status: "PENDING" as const,
     },
   });
 
-  async function handleSubmit(values: FormValues) {
+  const handleFormSubmit = form.handleSubmit(async (values: FormValues) => {
     try {
       await onSubmit(values);
       form.reset();
@@ -108,7 +106,7 @@ export function TaskForm({
     } catch (error) {
       console.error("Failed to save task:", error);
     }
-  }
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,7 +120,7 @@ export function TaskForm({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
