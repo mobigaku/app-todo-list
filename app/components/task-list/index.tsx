@@ -19,6 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { TaskFilters } from "@/app/components/task-filters";
+import { useFilters } from "@/app/hooks/use-filters";
 
 interface TaskWithCategory extends Task {
   category: Category | null;
@@ -66,10 +68,61 @@ export function TaskList({ onEdit }: TaskListProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { deleteTask, isLoading } = useTasks();
+  const { filters } = useFilters();
 
   const { data: tasks = [], isLoading: isLoadingTasks } = useQuery<TaskWithCategory[]>({
     queryKey: ["tasks"],
     queryFn: getTasks,
+  });
+
+  const filteredTasks = tasks.filter((task) => {
+    // Filter by status
+    if (filters.status !== "all" && task.status !== filters.status) {
+      return false;
+    }
+
+    // Filter by priority
+    if (filters.priority !== "all" && task.priority !== filters.priority) {
+      return false;
+    }
+
+    // Filter by date range
+    if (filters.dateRange.startDate) {
+      const startDate = new Date(filters.dateRange.startDate);
+      const taskStartDate = new Date(task.startDate);
+      if (taskStartDate < startDate) {
+        return false;
+      }
+    }
+
+    if (filters.dateRange.endDate) {
+      const endDate = new Date(filters.dateRange.endDate);
+      const taskEndDate = task.endDate ? new Date(task.endDate) : null;
+      if (taskEndDate && taskEndDate > endDate) {
+        return false;
+      }
+    }
+
+    // Filter by category
+    if (filters.categoryId !== "all" && task.categoryId !== filters.categoryId) {
+      return false;
+    }
+
+    // Filter by search term
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      const taskName = task.name.toLowerCase();
+      const taskDescription = task.description?.toLowerCase() || "";
+      const categoryName = task.category?.name.toLowerCase() || "";
+
+      return (
+        taskName.includes(searchTerm) ||
+        taskDescription.includes(searchTerm) ||
+        categoryName.includes(searchTerm)
+      );
+    }
+
+    return true;
   });
 
   const handleTaskClick = (task: TaskWithCategory) => {
@@ -101,14 +154,22 @@ export function TaskList({ onEdit }: TaskListProps) {
 
   return (
     <>
-      <div className="space-y-4">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onClick={() => handleTaskClick(task)}
-          />
-        ))}
+      <TaskFilters />
+
+      <div className="mt-6 space-y-4">
+        {filteredTasks.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhuma tarefa encontrada.
+          </div>
+        ) : (
+          filteredTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onClick={() => handleTaskClick(task)}
+            />
+          ))
+        )}
       </div>
 
       <TaskDetailsModal
