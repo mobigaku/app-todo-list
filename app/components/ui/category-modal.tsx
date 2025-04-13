@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -25,18 +26,19 @@ import { Input } from "@/components/ui/input";
 import { useCategoryMutations } from "@/hooks/useCategories";
 
 const formSchema = z.object({
-  name: z.string().min(1, "O nome da categoria é obrigatório"),
+  name: z.string().min(1, "Nome da categoria é obrigatório"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface CategoryModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
 }
 
-export function CategoryModal({ open, onOpenChange }: CategoryModalProps) {
+export function CategoryModal({ children }: CategoryModalProps) {
+  const [open, setOpen] = useState(false);
   const { createCategory, isCreating } = useCategoryMutations();
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,18 +46,19 @@ export function CategoryModal({ open, onOpenChange }: CategoryModalProps) {
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
+  async function onSubmit(data: FormValues) {
     try {
-      await createCategory(values.name);
+      await createCategory(data.name);
       form.reset();
-      onOpenChange(false);
+      setOpen(false);
     } catch (error) {
       // Error is handled by the mutation
     }
-  };
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nova Categoria</DialogTitle>
@@ -81,11 +84,7 @@ export function CategoryModal({ open, onOpenChange }: CategoryModalProps) {
             />
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={isCreating}>
