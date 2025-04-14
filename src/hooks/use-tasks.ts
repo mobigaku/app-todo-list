@@ -136,6 +136,7 @@ export function useTasks({
             priority?: Priority;
             endDate?: Date;
         }) => {
+            console.log({ task });
             const response = await fetch(`/api/tasks/${id}`, {
                 method: "PATCH",
                 headers: {

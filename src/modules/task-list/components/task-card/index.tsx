@@ -60,11 +60,12 @@ function NextStatusButton({
     const handleStatusChange = async () => {
         try {
             setIsUpdating(true);
+
             await updateTask({
                 ...task,
                 description: task.description || undefined,
                 status: next,
-                endDate: task.endDate ? new Date(task.endDate) : undefined,
+                endDate: next === "COMPLETED" ? new Date() : undefined,
             });
         } catch (error) {
             console.error("Failed to update task status:", error);
