@@ -1,16 +1,15 @@
-
-import { TaskList } from "@/src/modules/task-list/components/task-list";
+import TaskListPage from "@/src/modules/task-list";
 
 export default async function CategoriesPage({
-  params,
+    params,
 }: {
-  params: { id: string };
+    params: { id: string | "all" };
 }) {
-  const { id } = await params;
+    const { id } = await params;
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <TaskList categoryId={id} />
-    </div>
-  );
-} 
+    return (
+        <div className="h-full flex items-start justify-start p-4">
+            <TaskListPage categoryId={id === "all" ? undefined : id} />
+        </div>
+    );
+}
