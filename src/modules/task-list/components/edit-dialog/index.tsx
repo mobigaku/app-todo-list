@@ -1,56 +1,105 @@
 "use client";
 
-import { TaskForm } from "@/components/task-form";
-import { useCategories } from "@/hooks/use-categories";
-import { Button } from "@/src/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from "@/src/components/ui/dialog";
-import { useTasks } from "@/src/hooks/use-tasks";
-import { TaskFormValues } from "@/src/types/form";
-import { Task } from "@/src/types/prisma";
-import { Loader2, PencilIcon } from "lucide-react";
-import { toast } from "sonner";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoadingOverlay } from "@/components/ui/spinner";
+import { useTasks } from "@/hooks/use-tasks";
+import { Task } from "@/types/prisma";
+import { Pencil } from "lucide-react";
+import { useState } from "react";
 
-export default function EditDialog({ task }: { task: Task }) {
-    const { categories = [] } = useCategories();
-    const { isLoading, updateTask } = useTasks();
+interface EditDialogProps {
+    task: Task;
+}
 
-    const handleEditSubmit = async (data: TaskFormValues) => {
+export default function EditDialog({ task }: EditDialogProps) {
+    const [open, setOpen] = useState(false);
+    const [name, setName] = useState(task.name);
+    const [description, setDescription] = useState(task.description || "");
+    const { updateTask, isLoading } = useTasks();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         try {
-            if (task) {
-                await updateTask({ id: task.id, data });
-                toast.success("Tarefa atualizada com sucesso");
-            }
-        } catch {
-            toast.error("Erro ao atualizar tarefa. Tente novamente.");
+            await updateTask({
+                taskId: task.id,
+                data: {
+                    ...task,
+                    name,
+                    description,
+                    startDate: new Date(task.startDate),
+                    endDate: task.endDate ? new Date(task.endDate) : null,
+                },
+            });
+            setOpen(false);
+        } catch (error) {
+            console.error("Failed to update task:", error);
         }
     };
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" title="Editar">
-                    {isLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <PencilIcon className="h-4 w-4" />
-                    )}
+                <Button variant="outline" size="icon">
+                    <Pencil className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                    <DialogTitle>Editar Tarefa</DialogTitle>
-                </DialogHeader>
-                <TaskForm
-                    task={task}
-                    categories={categories}
-                    onSubmit={handleEditSubmit}
-                />
+            <DialogContent className="sm:max-w-[425px]">
+                <LoadingOverlay loading={isLoading.update}>
+                    <DialogHeader>
+                        <DialogTitle>Editar Tarefa</DialogTitle>
+                        <DialogDescription>
+                            Faça as alterações necessárias na tarefa. Clique em
+                            salvar quando terminar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit}>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">
+                                    Nome
+                                </Label>
+                                <Input
+                                    id="name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label
+                                    htmlFor="description"
+                                    className="text-right"
+                                >
+                                    Descrição
+                                </Label>
+                                <Input
+                                    id="description"
+                                    value={description}
+                                    onChange={(e) =>
+                                        setDescription(e.target.value)
+                                    }
+                                    className="col-span-3"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={isLoading.update}>
+                                Salvar alterações
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </LoadingOverlay>
             </DialogContent>
         </Dialog>
     );

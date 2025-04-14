@@ -8,6 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/spinner";
 import { useTasks } from "@/hooks/use-tasks";
 import { Separator } from "@/src/components/ui/separator";
 import { cn } from "@/src/lib/utils";
@@ -49,10 +50,6 @@ export default function TaskList({
             status: statusFilter,
         },
     });
-
-    if (isLoading.query) {
-        return <div>Carregando tarefas...</div>;
-    }
 
     const renderTaskCard = (task: Task) => {
         const StatusIcon = statusIcons[task.status];
@@ -176,7 +173,7 @@ export default function TaskList({
     };
 
     return (
-        <>
+        <LoadingState loading={isLoading.query} className="min-h-[200px]">
             {tasks.length === 0 ? (
                 <div className="text-center py-8 border rounded-md">
                     Nenhuma tarefa encontrada.
@@ -186,6 +183,6 @@ export default function TaskList({
                     {tasks.map(renderTaskCard)}
                 </div>
             )}
-        </>
+        </LoadingState>
     );
 }
