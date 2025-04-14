@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES, RETRY_CONFIG } from "@/constants/errors";
+
 // Custom error classes
 export class APIError extends Error {
     constructor(message: string, public status?: number, public code?: string) {
@@ -168,3 +170,52 @@ export const retryConfig = {
     maxRetryDelay: 5000 as number, // 5 seconds
     backoffFactor: 2 as number, // Exponential backoff
 } as const;
+
+export function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        if (error.message.includes("UNAUTHORIZED")) {
+            return ERROR_MESSAGES.UNAUTHORIZED;
+        }
+        if (error.message.includes("UNAUTHENTICATED")) {
+            return ERROR_MESSAGES.UNAUTHENTICATED;
+        }
+        if (error.message.includes("INVALID_CREDENTIALS")) {
+            return ERROR_MESSAGES.INVALID_CREDENTIALS;
+        }
+        if (error.message.includes("INVALID_TOKEN")) {
+            return ERROR_MESSAGES.INVALID_TOKEN;
+        }
+        if (error.message.includes("NOT_FOUND")) {
+            return ERROR_MESSAGES.NOT_FOUND;
+        }
+        if (error.message.includes("VALIDATION_ERROR")) {
+            return ERROR_MESSAGES.VALIDATION_ERROR;
+        }
+        if (error.message.includes("DUPLICATE_ENTRY")) {
+            return ERROR_MESSAGES.DUPLICATE_ENTRY;
+        }
+        if (error.message.includes("FORBIDDEN")) {
+            return ERROR_MESSAGES.FORBIDDEN;
+        }
+        if (error.message.includes("RATE_LIMIT")) {
+            return ERROR_MESSAGES.RATE_LIMIT;
+        }
+        if (error.message.includes("BAD_REQUEST")) {
+            return ERROR_MESSAGES.BAD_REQUEST;
+        }
+        if (error.message.includes("NETWORK_ERROR")) {
+            return ERROR_MESSAGES.NETWORK_ERROR;
+        }
+        if (error.message.includes("TIMEOUT")) {
+            return ERROR_MESSAGES.TIMEOUT;
+        }
+        return error.message;
+    }
+    return ERROR_MESSAGES.UNKNOWN;
+}
+
+export function handleApiError(error: unknown): never {
+    throw new Error(getErrorMessage(error));
+}
+
+export const retryWithBackoff = RETRY_CONFIG;

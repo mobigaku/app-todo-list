@@ -36,13 +36,9 @@ export function TaskStatusPriority({
     const handleStatusChange = async (newStatus: Status) => {
         try {
             await updateTask({
-                taskId: task.id,
-                data: {
-                    ...task,
-                    status: newStatus,
-                    startDate: new Date(task.startDate),
-                    endDate: task.endDate ? new Date(task.endDate) : null,
-                },
+                id: task.id,
+                status: newStatus,
+                endDate: task.endDate ? new Date(task.endDate) : undefined,
             });
             onUpdate?.();
         } catch (error) {
@@ -54,13 +50,9 @@ export function TaskStatusPriority({
     const handlePriorityChange = async (newPriority: Priority) => {
         try {
             await updateTask({
-                taskId: task.id,
-                data: {
-                    ...task,
-                    priority: newPriority,
-                    startDate: new Date(task.startDate),
-                    endDate: task.endDate ? new Date(task.endDate) : null,
-                },
+                id: task.id,
+                priority: newPriority,
+                endDate: task.endDate ? new Date(task.endDate) : undefined,
             });
             onUpdate?.();
         } catch (error) {
@@ -72,14 +64,9 @@ export function TaskStatusPriority({
     const handleQuickComplete = async () => {
         try {
             await updateTask({
-                taskId: task.id,
-                data: {
-                    ...task,
-                    status:
-                        task.status === "COMPLETED" ? "PENDING" : "COMPLETED",
-                    startDate: new Date(task.startDate),
-                    endDate: task.endDate ? new Date(task.endDate) : null,
-                },
+                id: task.id,
+                status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED",
+                endDate: task.endDate ? new Date(task.endDate) : undefined,
             });
             onUpdate?.();
         } catch (error) {
