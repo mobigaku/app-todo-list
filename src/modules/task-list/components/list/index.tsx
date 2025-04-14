@@ -8,6 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingState } from "@/components/ui/spinner";
 import { useTasks } from "@/hooks/use-tasks";
 import { Separator } from "@/src/components/ui/separator";
@@ -28,7 +29,7 @@ const statusIcons = {
     CANCELLED: XCircle,
 };
 
-export default function TaskList({
+function TaskListContent({
     categoryId,
     sortField,
     sortOrder,
@@ -184,5 +185,19 @@ export default function TaskList({
                 </div>
             )}
         </LoadingState>
+    );
+}
+
+export default function TaskList(props: {
+    categoryId?: string;
+    sortField: SortField;
+    sortOrder: SortOrder;
+    statusFilter: Status | undefined;
+    priorityFilter: Priority | undefined;
+}) {
+    return (
+        <ErrorBoundary>
+            <TaskListContent {...props} />
+        </ErrorBoundary>
     );
 }
