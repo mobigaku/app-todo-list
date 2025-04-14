@@ -164,7 +164,7 @@ export function shouldRetry(error: unknown): boolean {
 // Constants for retry configuration
 export const retryConfig = {
     maxRetries: 3,
-    initialRetryDelay: 1000, // 1 second
-    maxRetryDelay: 5000, // 5 seconds
-    backoffFactor: 2, // Exponential backoff
+    initialRetryDelay: 1000 as number, // 1 second
+    maxRetryDelay: 5000 as number, // 5 seconds
+    backoffFactor: 2 as number, // Exponential backoff
 } as const;
