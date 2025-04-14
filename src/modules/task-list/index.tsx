@@ -11,13 +11,16 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTasks } from "@/hooks/use-tasks";
 import { Priority, Status } from "@/types/prisma";
-import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, ChevronLeft } from "lucide-react";
 import { useCallback, useState } from "react";
 import TaskList from "./components/list";
 import { SORT_FIELD_LABELS } from "./constants";
 import { SortField, SortOrder } from "./types";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function TaskListPage({ categoryId }: { categoryId?: string }) {
+    const router = useRouter();
     const [sortField, setSortField] = useState<SortField>("name");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [statusFilter, setStatusFilter] = useState<Status | undefined>(
@@ -42,13 +45,6 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
             .length,
         COMPLETED: allTasks.filter((task) => task.status === "COMPLETED")
             .length,
-    };
-
-    const tasksByStatus = {
-        ALL: allTasks,
-        PENDING: allTasks.filter((task) => task.status === "PENDING"),
-        IN_PROGRESS: allTasks.filter((task) => task.status === "IN_PROGRESS"),
-        COMPLETED: allTasks.filter((task) => task.status === "COMPLETED"),
     };
 
     const handleTabChange = useCallback((value: string) => {
@@ -79,7 +75,17 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
     return (
         <div className="flex flex-col items-start justify-start w-full gap-4">
             <div className="flex lg:flex-row flex-col items-center justify-between gap-4 w-full">
-                <h1 className="text-3xl font-bold">Suas Tarefas</h1>
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.push("/")}
+                        className="hover:bg-accent"
+                    >
+                        <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <h1 className="text-3xl font-bold">Suas Tarefas</h1>
+                </div>
 
                 <div className="flex gap-4 flex-wrap justify-end">
                     <div className="flex gap-4 flex-wrap">
