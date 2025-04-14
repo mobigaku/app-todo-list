@@ -17,14 +17,6 @@ import TaskList from "./components/list";
 import { SORT_FIELD_LABELS } from "./constants";
 import { SortField, SortOrder } from "./types";
 
-const quickFilters = [
-    { label: "Todas", status: undefined },
-    { label: "Ativas", status: "IN_PROGRESS" as Status },
-    { label: "Pendentes", status: "PENDING" as Status },
-    { label: "Concluídas", status: "COMPLETED" as Status },
-    { label: "Canceladas", status: "CANCELLED" as Status },
-];
-
 export default function TaskListPage({ categoryId }: { categoryId?: string }) {
     const [sortField, setSortField] = useState<SortField>("name");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
@@ -37,7 +29,7 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
     const [activeTab, setActiveTab] = useState<string>("all");
 
     // Get all tasks to calculate counts
-    const { tasks: allTasks = [], isLoading } = useTasks({
+    const { tasks: allTasks = [] } = useTasks({
         categoryId,
         limit: 1000, // Get a large number of tasks for accurate counts
     });
@@ -66,11 +58,6 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
         } else {
             setStatusFilter(value as Status);
         }
-    }, []);
-
-    const handleQuickFilter = useCallback((status: Status | undefined) => {
-        setStatusFilter(status);
-        setActiveTab(status || "all");
     }, []);
 
     const handlePriorityChange = useCallback((value: "all" | Priority) => {
