@@ -27,6 +27,7 @@ export function useCategories() {
                 const response = await fetch("/api/categories");
                 return handleAPIResponse<Category[]>(response);
             },
+            staleTime: 30 * 1000, // Consider data fresh for 30 seconds
         });
     };
 
@@ -38,6 +39,9 @@ export function useCategories() {
         },
         staleTime: 30 * 1000, // Consider data fresh for 30 seconds
         gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
     });
 
     const { mutate: createCategory, isPending: isCreating } = useMutation({

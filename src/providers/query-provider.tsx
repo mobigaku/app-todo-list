@@ -38,13 +38,19 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         defaultOptions: {
             queries: {
                 staleTime: 60 * 1000, // Data stays fresh for 1 minute
-                gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
-                refetchOnWindowFocus: false,
-                ...retryOptions,
+                gcTime: 10 * 60 * 1000, // Keep unused data in cache for 10 minutes
+                refetchOnWindowFocus: true, // Enable automatic background refetching
+                refetchOnReconnect: true, // Refetch when reconnecting
+                refetchOnMount: true, // Refetch when component mounts
+                retry: retryOptions.retry,
+                retryDelay: retryOptions.retryDelay,
+                networkMode: "online",
+                structuralSharing: true,
             },
             mutations: {
                 ...retryOptions,
-                onError: handleError,
+                networkMode: "online",
+                retry: 2, // Fewer retries for mutations
             },
         },
     });
@@ -72,7 +78,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             >
                 <QueryClientProvider client={queryClient}>
                     {children}
-                    <ReactQueryDevtools initialIsOpen={false} />
+                    <ReactQueryDevtools
+                        initialIsOpen={false}
+                        position="right"
+                    />
                 </QueryClientProvider>
             </Suspense>
         </ErrorBoundary>

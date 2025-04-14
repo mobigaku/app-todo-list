@@ -20,9 +20,13 @@ import { useState } from "react";
 
 interface EditDialogProps {
     task: Task;
+    isLoading?: boolean;
 }
 
-export default function EditDialog({ task }: EditDialogProps) {
+export default function EditDialog({
+    task,
+    isLoading: externalLoading,
+}: EditDialogProps) {
     const [open, setOpen] = useState(false);
     const [name, setName] = useState(task.name);
     const [description, setDescription] = useState(task.description || "");
@@ -50,12 +54,16 @@ export default function EditDialog({ task }: EditDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={externalLoading}
+                >
                     <Pencil className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
-                <LoadingOverlay loading={isLoading.update}>
+                <LoadingOverlay loading={isLoading.update || externalLoading}>
                     <DialogHeader>
                         <DialogTitle>Editar Tarefa</DialogTitle>
                         <DialogDescription>

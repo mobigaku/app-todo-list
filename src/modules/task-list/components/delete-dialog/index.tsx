@@ -18,9 +18,13 @@ import { useState } from "react";
 
 interface DeleteDialogProps {
     task: Task;
+    isLoading?: boolean;
 }
 
-export default function DeleteDialog({ task }: DeleteDialogProps) {
+export default function DeleteDialog({
+    task,
+    isLoading: externalLoading = false,
+}: DeleteDialogProps) {
     const [open, setOpen] = useState(false);
     const { deleteTask, isLoading } = useTasks();
 
@@ -36,12 +40,16 @@ export default function DeleteDialog({ task }: DeleteDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={externalLoading}
+                >
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
-                <LoadingOverlay loading={isLoading.delete}>
+                <LoadingOverlay loading={isLoading.delete || externalLoading}>
                     <DialogHeader>
                         <DialogTitle>Excluir Tarefa</DialogTitle>
                         <DialogDescription>
@@ -53,7 +61,7 @@ export default function DeleteDialog({ task }: DeleteDialogProps) {
                         <Button
                             variant="destructive"
                             onClick={handleDelete}
-                            disabled={isLoading.delete}
+                            disabled={isLoading.delete || externalLoading}
                         >
                             Excluir
                         </Button>

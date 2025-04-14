@@ -1,33 +1,23 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { LoadingState } from "@/components/ui/spinner";
+import { TaskSkeleton } from "@/components/ui/skeletons/task-skeleton";
 import { useTasks } from "@/hooks/use-tasks";
-import { Separator } from "@/src/components/ui/separator";
-import { cn } from "@/src/lib/utils";
-import { Priority, Status, Task } from "@/types/prisma";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { CheckCircle2, Clock, PlayCircle, XCircle } from "lucide-react";
-import { SortField, SortOrder } from "../../types";
-import { priorityLabels, statusLabels } from "../../utils";
-import DeleteDialog from "../delete-dialog";
-import EditDialog from "../edit-dialog";
+import { Priority, Status } from "@/types/prisma";
+import { useState } from "react";
+import { useInView } from "react-intersection-observer";
+import { TaskCard } from "../task-card";
 
-const statusIcons = {
-    PENDING: Clock,
-    IN_PROGRESS: PlayCircle,
-    COMPLETED: CheckCircle2,
-    CANCELLED: XCircle,
-};
+interface TaskListProps {
+    categoryId?: string;
+    sortField: "name" | "createdAt" | "endDate" | "priority" | "status";
+    sortOrder: "asc" | "desc";
+    statusFilter: Status | undefined;
+    priorityFilter: Priority | undefined;
+}
+
+const ITEMS_PER_PAGE = 10;
 
 function TaskListContent({
     categoryId,
@@ -35,14 +25,13 @@ function TaskListContent({
     sortOrder,
     statusFilter,
     priorityFilter,
-}: {
-    categoryId?: string;
-    sortField: SortField;
-    sortOrder: SortOrder;
-    statusFilter: Status | undefined;
-    priorityFilter: Priority | undefined;
-}) {
-    const { tasks = [], isLoading } = useTasks({
+}: TaskListProps) {
+    const [page, setPage] = useState(1);
+    const {
+        tasks = [],
+        isLoading,
+        pagination,
+    } = useTasks({
         categoryId,
         sortBy: sortField,
         sortOrder,
@@ -50,151 +39,57 @@ function TaskListContent({
             priority: priorityFilter,
             status: statusFilter,
         },
+        page,
+        limit: ITEMS_PER_PAGE,
     });
 
-    const renderTaskCard = (task: Task) => {
-        const StatusIcon = statusIcons[task.status];
+    const { ref: loadMoreRef, inView } = useInView({
+        threshold: 0.5,
+        triggerOnce: false,
+    });
 
+    if (inView && pagination?.hasMore && !isLoading.query) {
+        setPage((prev) => prev + 1);
+    }
+
+    if (isLoading.query && tasks.length === 0) {
         return (
-            <Card
-                key={task.id}
-                className={cn(
-                    "w-full gap-1 py-0 overflow-hidden border-l-4",
-                    task.status === "COMPLETED" && "border-l-green-500",
-                    task.status === "CANCELLED" && "border-l-red-500",
-                    task.status === "IN_PROGRESS" && "border-l-blue-500",
-                    task.status === "PENDING" && "border-l-gray-500",
-                    task.priority === "MAXIMUM" && "border-2 border-red-500",
-                    task.priority === "HIGH" && "border-2 border-yellow-500"
-                )}
-            >
-                <CardHeader
-                    className={cn(
-                        "flex flex-row items-center justify-between py-3",
-                        task.status === "COMPLETED" && "bg-green-500/10",
-                        task.status === "CANCELLED" && "bg-red-500/10",
-                        task.status === "IN_PROGRESS" && "bg-blue-500/10",
-                        task.status === "PENDING" && "bg-gray-500/10"
-                    )}
-                >
-                    <div className="flex items-center gap-2">
-                        <StatusIcon
-                            className={cn(
-                                "h-5 w-5",
-                                task.status === "COMPLETED" && "text-green-500",
-                                task.status === "CANCELLED" && "text-red-500",
-                                task.status === "IN_PROGRESS" &&
-                                    "text-blue-500",
-                                task.status === "PENDING" && "text-gray-500"
-                            )}
-                        />
-                        <CardTitle className="flex items-start gap-2 justify-start font-bold lg:text-2xl text-lg lg:flex-row flex-col">
-                            {task.name}
-                        </CardTitle>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <Badge
-                            variant="secondary"
-                            className={cn(
-                                task.priority === "MAXIMUM" &&
-                                    "bg-red-100 text-red-500",
-                                task.priority === "HIGH" &&
-                                    "bg-yellow-100 text-yellow-500",
-                                task.priority === "MEDIUM" &&
-                                    "bg-blue-100 text-blue-500",
-                                task.priority === "LOW" &&
-                                    "bg-gray-100 text-gray-700"
-                            )}
-                        >
-                            {priorityLabels[task.priority]}
-                        </Badge>
-
-                        <Badge
-                            variant="secondary"
-                            className={cn(
-                                task.status === "COMPLETED" &&
-                                    "bg-green-100 text-green-500",
-                                task.status === "CANCELLED" &&
-                                    "bg-red-100 text-red-500",
-                                task.status === "IN_PROGRESS" &&
-                                    "bg-blue-100 text-blue-500",
-                                task.status === "PENDING" &&
-                                    "bg-gray-100 text-gray-700"
-                            )}
-                        >
-                            {statusLabels[task.status]}
-                        </Badge>
-                    </div>
-                </CardHeader>
-
-                <CardContent className="space-y-2 pt-3">
-                    <div>{task.description}</div>
-                </CardContent>
-
-                <div className="flex items-center justify-center mx-4">
-                    <Separator className="my-0" />
-                </div>
-
-                <CardFooter className="justify-between space-x-2 pb-3">
-                    <div className="flex lg:flex-row flex-col lg:items-center lg:justify-start justify-center gap-2">
-                        <div className="text-sm text-muted-foreground">
-                            <span className="font-semibold">Criada em:</span>{" "}
-                            {task.createdAt
-                                ? format(task.createdAt, "PPP", {
-                                      locale: ptBR,
-                                  })
-                                : "N/A"}
-                        </div>
-
-                        <Separator
-                            orientation="vertical"
-                            className="h-4 hidden lg:block"
-                        />
-
-                        <div className="text-sm text-muted-foreground">
-                            <span className="font-semibold">
-                                Data de Conclusão:
-                            </span>{" "}
-                            {task.endDate
-                                ? format(task.endDate, "PPP", {
-                                      locale: ptBR,
-                                  })
-                                : "N/A"}
-                        </div>
-                    </div>
-
-                    <div className="flex gap-2 justify-end">
-                        <EditDialog task={task} />
-                        <DeleteDialog task={task} />
-                    </div>
-                </CardFooter>
-            </Card>
+            <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, index) => (
+                    <TaskSkeleton key={index} />
+                ))}
+            </div>
         );
-    };
+    }
+
+    if (!isLoading.query && tasks.length === 0) {
+        return (
+            <EmptyState
+                title="Nenhuma tarefa encontrada"
+                description="Comece criando uma nova tarefa"
+            />
+        );
+    }
 
     return (
-        <LoadingState loading={isLoading.query} className="min-h-[200px]">
-            {tasks.length === 0 ? (
-                <div className="text-center py-8 border rounded-md">
-                    Nenhuma tarefa encontrada.
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 gap-4 w-full">
-                    {tasks.map(renderTaskCard)}
+        <div className="space-y-4">
+            {tasks.map((task) => (
+                <TaskCard key={task.id} task={task} isLoading={isLoading} />
+            ))}
+            {pagination?.hasMore && (
+                <div ref={loadMoreRef} className="py-4">
+                    <div className="space-y-4">
+                        {Array.from({ length: 2 }).map((_, index) => (
+                            <TaskSkeleton key={index} />
+                        ))}
+                    </div>
                 </div>
             )}
-        </LoadingState>
+        </div>
     );
 }
 
-export default function TaskList(props: {
-    categoryId?: string;
-    sortField: SortField;
-    sortOrder: SortOrder;
-    statusFilter: Status | undefined;
-    priorityFilter: Priority | undefined;
-}) {
+export default function TaskList(props: TaskListProps) {
     return (
         <ErrorBoundary>
             <TaskListContent {...props} />
