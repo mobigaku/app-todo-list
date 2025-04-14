@@ -75,3 +75,4 @@ experimental/**/*.db
 .nuxt
 dev.db
 *.env
+*.db-journal
