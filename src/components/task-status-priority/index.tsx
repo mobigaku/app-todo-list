@@ -20,7 +20,7 @@ import { Task } from "@/types/prisma";
 import { toast } from "sonner";
 
 type Priority = "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
-type Status = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+type Status = "PENDING" | "IN_PROGRESS" | "COMPLETED";
 
 interface TaskStatusPriorityProps {
     task: Task;
@@ -117,7 +117,6 @@ export function TaskStatusPriority({
                     <SelectItem value="PENDING">Não Iniciada</SelectItem>
                     <SelectItem value="IN_PROGRESS">Em Andamento</SelectItem>
                     <SelectItem value="COMPLETED">Concluída</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelada</SelectItem>
                 </SelectContent>
             </Select>
 

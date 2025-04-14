@@ -59,9 +59,12 @@ enum Priority {
   MAXIMUM
 }
 
+/// Represents the current state of a task
+/// - PENDING: Task has not been started
+/// - IN_PROGRESS: Task is currently being worked on
+/// - COMPLETED: Task has been finished
 enum Status {
   PENDING
   IN_PROGRESS
   COMPLETED
-  CANCELLED
 }

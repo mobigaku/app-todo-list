@@ -11,7 +11,6 @@ export const STATUS_LABELS: Record<Status, string> = {
     PENDING: "Pendente",
     IN_PROGRESS: "Em Progresso",
     COMPLETED: "Concluída",
-    CANCELLED: "Cancelada",
 };
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
@@ -25,5 +24,4 @@ export const STATUS_COLORS: Record<Status, string> = {
     PENDING: "bg-gray-500",
     IN_PROGRESS: "bg-blue-500",
     COMPLETED: "bg-green-500",
-    CANCELLED: "bg-red-500",
 };

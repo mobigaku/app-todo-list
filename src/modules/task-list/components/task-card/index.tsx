@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -8,11 +9,13 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PRIORITY_LABELS, STATUS_LABELS } from "@/constants/task";
+import { useTasks } from "@/hooks/use-tasks";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/prisma";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, Circle, MinusCircle, PlayCircle } from "lucide-react";
+import { CheckCircle, Circle, Loader2, PlayCircle } from "lucide-react";
+import { useState } from "react";
 import DeleteDialog from "../delete-dialog";
 import EditDialog from "../edit-dialog";
 
@@ -20,7 +23,13 @@ const statusIcons = {
     PENDING: Circle,
     IN_PROGRESS: PlayCircle,
     COMPLETED: CheckCircle,
-    CANCELLED: MinusCircle,
+} as const;
+
+// Define the next status mapping
+const nextStatus = {
+    PENDING: "IN_PROGRESS",
+    IN_PROGRESS: "COMPLETED",
+    COMPLETED: null,
 } as const;
 
 interface TaskCardProps {
@@ -33,6 +42,58 @@ interface TaskCardProps {
     };
 }
 
+function NextStatusButton({
+    task,
+    isLoading,
+}: {
+    task: Task;
+    isLoading: boolean;
+}) {
+    const { updateTask } = useTasks();
+    const [isUpdating, setIsUpdating] = useState(false);
+    const next = nextStatus[task.status];
+
+    if (!next) return null;
+
+    const NextIcon = statusIcons[next];
+
+    const handleStatusChange = async () => {
+        try {
+            setIsUpdating(true);
+            await updateTask({
+                ...task,
+                description: task.description || undefined,
+                status: next,
+                endDate: task.endDate ? new Date(task.endDate) : undefined,
+            });
+        } catch (error) {
+            console.error("Failed to update task status:", error);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    return (
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleStatusChange}
+            disabled={isLoading || isUpdating}
+            className={cn(
+                "h-10 w-10 cursor-pointer relative",
+                next === "COMPLETED" && "hover:text-green-500",
+                next === "IN_PROGRESS" && "hover:text-blue-500"
+            )}
+        >
+            {isUpdating ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+                <NextIcon className="h-6 w-6" />
+            )}
+        </Button>
+    );
+}
+
 export function TaskCard({ task, isLoading }: TaskCardProps) {
     const StatusIcon = statusIcons[task.status];
 
@@ -41,7 +102,6 @@ export function TaskCard({ task, isLoading }: TaskCardProps) {
             className={cn(
                 "w-full gap-1 py-0 overflow-hidden border-l-4",
                 task.status === "COMPLETED" && "border-l-green-500",
-                task.status === "CANCELLED" && "border-l-red-500",
                 task.status === "IN_PROGRESS" && "border-l-blue-500",
                 task.status === "PENDING" && "border-l-gray-500",
                 task.priority === "MAXIMUM" && "border-2 border-red-500",
@@ -52,7 +112,6 @@ export function TaskCard({ task, isLoading }: TaskCardProps) {
                 className={cn(
                     "flex flex-row items-center justify-between py-3",
                     task.status === "COMPLETED" && "bg-green-500/10",
-                    task.status === "CANCELLED" && "bg-red-500/10",
                     task.status === "IN_PROGRESS" && "bg-blue-500/10",
                     task.status === "PENDING" && "bg-gray-500/10"
                 )}
@@ -62,7 +121,6 @@ export function TaskCard({ task, isLoading }: TaskCardProps) {
                         className={cn(
                             "h-5 w-5",
                             task.status === "COMPLETED" && "text-green-500",
-                            task.status === "CANCELLED" && "text-red-500",
                             task.status === "IN_PROGRESS" && "text-blue-500",
                             task.status === "PENDING" && "text-gray-500"
                         )}
@@ -73,6 +131,10 @@ export function TaskCard({ task, isLoading }: TaskCardProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <NextStatusButton
+                        task={task}
+                        isLoading={isLoading.update}
+                    />
                     <Badge
                         variant="secondary"
                         className={cn(
@@ -94,8 +156,6 @@ export function TaskCard({ task, isLoading }: TaskCardProps) {
                         className={cn(
                             task.status === "COMPLETED" &&
                                 "bg-green-100 text-green-500",
-                            task.status === "CANCELLED" &&
-                                "bg-red-100 text-red-500",
                             task.status === "IN_PROGRESS" &&
                                 "bg-blue-100 text-blue-500",
                             task.status === "PENDING" &&

@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTasks } from "@/hooks/use-tasks";
 import { Priority, Status } from "@/types/prisma";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import TaskList from "./components/list";
 import { SORT_FIELD_LABELS } from "./constants";
 import { SortField, SortOrder } from "./types";
@@ -35,21 +35,21 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
     });
 
     // Calculate task counts for each status
-    const taskCounts = useMemo(
-        () => ({
-            all: allTasks.length,
-            PENDING: allTasks.filter((task) => task.status === "PENDING")
-                .length,
-            IN_PROGRESS: allTasks.filter(
-                (task) => task.status === "IN_PROGRESS"
-            ).length,
-            COMPLETED: allTasks.filter((task) => task.status === "COMPLETED")
-                .length,
-            CANCELLED: allTasks.filter((task) => task.status === "CANCELLED")
-                .length,
-        }),
-        [allTasks]
-    );
+    const taskCounts = {
+        ALL: allTasks.length,
+        PENDING: allTasks.filter((task) => task.status === "PENDING").length,
+        IN_PROGRESS: allTasks.filter((task) => task.status === "IN_PROGRESS")
+            .length,
+        COMPLETED: allTasks.filter((task) => task.status === "COMPLETED")
+            .length,
+    };
+
+    const tasksByStatus = {
+        ALL: allTasks,
+        PENDING: allTasks.filter((task) => task.status === "PENDING"),
+        IN_PROGRESS: allTasks.filter((task) => task.status === "IN_PROGRESS"),
+        COMPLETED: allTasks.filter((task) => task.status === "COMPLETED"),
+    };
 
     const handleTabChange = useCallback((value: string) => {
         setActiveTab(value);
@@ -144,7 +144,7 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
                 <TabsList className="w-full justify-start">
                     <TabsTrigger value="all" className="flex gap-2">
                         Todas
-                        <Badge variant="secondary">{taskCounts.all}</Badge>
+                        <Badge variant="secondary">{taskCounts.ALL}</Badge>
                     </TabsTrigger>
                     <TabsTrigger value="PENDING" className="flex gap-2">
                         Pendentes
@@ -160,12 +160,6 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
                         Concluídas
                         <Badge variant="secondary">
                             {taskCounts.COMPLETED}
-                        </Badge>
-                    </TabsTrigger>
-                    <TabsTrigger value="CANCELLED" className="flex gap-2">
-                        Canceladas
-                        <Badge variant="secondary">
-                            {taskCounts.CANCELLED}
                         </Badge>
                     </TabsTrigger>
                 </TabsList>
