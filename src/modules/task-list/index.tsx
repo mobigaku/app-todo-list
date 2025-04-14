@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Select,
     SelectContent,
@@ -12,12 +13,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTasks } from "@/hooks/use-tasks";
 import { Priority, Status } from "@/types/prisma";
 import { ArrowDownIcon, ArrowUpIcon, ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import TaskList from "./components/list";
 import { SORT_FIELD_LABELS } from "./constants";
 import { SortField, SortOrder } from "./types";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
 export default function TaskListPage({ categoryId }: { categoryId?: string }) {
     const router = useRouter();
@@ -32,8 +32,9 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
     const [activeTab, setActiveTab] = useState<string>("all");
 
     // Get all tasks to calculate counts
-    const { tasks: allTasks = [] } = useTasks({
+    const { tasks: allTasks } = useTasks({
         categoryId,
+        page: 1,
         limit: 1000, // Get a large number of tasks for accurate counts
     });
 
