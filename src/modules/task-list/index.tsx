@@ -16,7 +16,7 @@ import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { useState } from "react";
 import TaskList from "./components/list";
 import { SortField, SortOrder } from "./types";
-import { sortFieldLabels } from "./utils";
+import { SORT_FIELD_LABELS } from "./constants";
 
 const quickFilters = [
     { label: "Todas", status: undefined },
@@ -165,7 +165,7 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
                                         <SelectValue placeholder="Ordenar por" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(sortFieldLabels).map(
+                                        {Object.entries(SORT_FIELD_LABELS).map(
                                             ([key, label]) => (
                                                 <SelectItem
                                                     key={key}
