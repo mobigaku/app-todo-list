@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -14,9 +13,9 @@ import { cn } from "@/src/lib/utils";
 import { Priority, Status } from "@/types/prisma";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrashIcon } from "lucide-react";
 import { SortField, SortOrder } from "../../types";
 import { priorityLabels, statusLabels } from "../../utils";
+import DeleteDialog from "../delete-dialog";
 import EditDialog from "../edit-dialog";
 
 export default function TaskList({
@@ -141,14 +140,7 @@ export default function TaskList({
 
                                 <div className="flex gap-2 justify-end">
                                     <EditDialog task={task} />
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        title="Excluir"
-                                        onClick={() => {}} // Will be implemented in task 6.7
-                                    >
-                                        <TrashIcon className="h-4 w-4" />
-                                    </Button>
+                                    <DeleteDialog task={task} />
                                 </div>
                             </CardFooter>
                         </Card>
