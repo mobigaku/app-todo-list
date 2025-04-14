@@ -1,6 +1,7 @@
-import { authOptions, getCurrentUser } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
 import { errorMessages, retryConfig } from "@/lib/error-handling";
 import prisma from "@/src/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -98,12 +99,30 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
-        const user = await getCurrentUser();
+        const session = await getServerSession(authOptions);
 
-        if (!user) {
+        if (!session?.user?.id) {
+            console.error("[CATEGORIES_POST] No user ID in session:", session);
             return NextResponse.json(
                 { error: errorMessages.UNAUTHORIZED },
                 { status: 401 }
+            );
+        }
+
+        // Verify that the user exists in the database
+        const userExists = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { id: true },
+        });
+
+        if (!userExists) {
+            console.error(
+                "[CATEGORIES_POST] User not found in database:",
+                session.user.id
+            );
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
             );
         }
 
@@ -114,14 +133,22 @@ export async function POST(req: Request) {
             prisma.category.create({
                 data: {
                     name: validatedData.name,
-                    userId: user.id,
+                    userId: session.user.id,
+                },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                        },
+                    },
                 },
             })
         );
 
         return NextResponse.json(category);
     } catch (error) {
-        console.log(error);
+        console.error("[CATEGORIES_POST] Error details:", error);
         if (error instanceof z.ZodError) {
             return NextResponse.json(
                 { error: error.errors[0].message },
@@ -129,7 +156,29 @@ export async function POST(req: Request) {
             );
         }
 
-        console.error("[CATEGORIES_POST]", error);
+        // Log specific Prisma errors
+        if (error && typeof error === "object" && "code" in error) {
+            const prismaError = error as Prisma.PrismaClientKnownRequestError;
+            console.error(
+                `[CATEGORIES_POST] Prisma error code: ${prismaError.code}`,
+                "Error meta:",
+                prismaError.meta,
+                "Error message:",
+                prismaError.message,
+                "User ID attempted:",
+                session?.user?.id
+            );
+
+            if (prismaError.code === "P2003") {
+                return NextResponse.json(
+                    {
+                        error: "Invalid user reference. Please try logging out and back in.",
+                    },
+                    { status: 400 }
+                );
+            }
+        }
+
         return NextResponse.json(
             { error: errorMessages.CATEGORY_CREATE_ERROR },
             { status: 500 }

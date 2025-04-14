@@ -1,42 +1,36 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { NextAuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaClient } from "@prisma/client";
+import { getServerSession, NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import prisma from "./prisma";
-import { PrismaClient } from "@prisma/client";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma as PrismaClient),
-  session: {
-    strategy: "jwt",
-  },
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  callbacks: {
-    session({ session, token }) {
-      if (session.user && token.id) {
-        session.user.id = token.id;
-      }
-      return session;
+    adapter: PrismaAdapter(prisma as PrismaClient),
+    session: {
+        strategy: "jwt",
     },
-  },
+    providers: [
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        }),
+    ],
+    callbacks: {
+        session({ session, token }) {
+            if (session.user && token.id) {
+                session.user.id = token.id;
+            }
+            return session;
+        },
+    },
 };
 
 export async function getSession() {
-  return await getServerSession(authOptions);
+    return await getServerSession(authOptions);
 }
 
 export async function getCurrentUser() {
-  const session = await getSession();
+    const session = await getSession();
 
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  return session.user;
-} 
+    return session?.user;
+}

@@ -1,15 +1,10 @@
 "use client";
 
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import {
-    getUserFriendlyErrorMessage,
-    retryConfig,
-    shouldRetry,
-} from "@/lib/error-handling";
+import { retryConfig, shouldRetry } from "@/lib/error-handling";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Suspense } from "react";
-import { toast } from "sonner";
 
 // Shared retry configuration for both queries and mutations
 const retryOptions = {
@@ -26,11 +21,6 @@ const retryOptions = {
             retryConfig.maxRetryDelay
         );
     },
-};
-
-// Error handler function
-const handleError = (error: unknown) => {
-    toast.error(getUserFriendlyErrorMessage(error));
 };
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
