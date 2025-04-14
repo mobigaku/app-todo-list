@@ -1,12 +1,16 @@
 import { RootState } from "@/lib/store";
 import {
     clearFilters,
+    FilterState,
     setCategoryFilter,
     setDateRangeFilter,
     setPriorityFilter,
     setSearchFilter,
+    setSortField,
+    setSortOrder,
     setStatusFilter,
 } from "@/lib/store/slices/filter-slice";
+import { SortField, SortOrder } from "@/modules/task-list/types";
 import { Priority, Status } from "@/src/types/prisma";
 import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,7 +22,9 @@ interface DateRange {
 
 export function useFilters() {
     const dispatch = useDispatch();
-    const filters = useSelector((state: RootState) => state.filters);
+    const filters = useSelector<RootState, FilterState>(
+        (state) => state.filters
+    );
 
     const handleSetStatus = useCallback(
         (status: Status | "all") => {
@@ -55,6 +61,20 @@ export function useFilters() {
         [dispatch]
     );
 
+    const handleSetSortField = useCallback(
+        (sortField: SortField) => {
+            dispatch(setSortField(sortField));
+        },
+        [dispatch]
+    );
+
+    const handleSetSortOrder = useCallback(
+        (sortOrder: SortOrder) => {
+            dispatch(setSortOrder(sortOrder));
+        },
+        [dispatch]
+    );
+
     const handleClear = useCallback(() => {
         dispatch(clearFilters());
     }, [dispatch]);
@@ -66,6 +86,8 @@ export function useFilters() {
         setDateRange: handleSetDateRange,
         setCategory: handleSetCategory,
         setSearch: handleSetSearch,
+        setSortField: handleSetSortField,
+        setSortOrder: handleSetSortOrder,
         clear: handleClear,
     };
 }

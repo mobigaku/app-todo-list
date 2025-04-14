@@ -10,6 +10,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFilters } from "@/hooks/use-filters";
 import { useTasks } from "@/hooks/use-tasks";
 import { Priority, Status } from "@/types/prisma";
 import { ArrowDownIcon, ArrowUpIcon, ChevronLeft } from "lucide-react";
@@ -17,18 +18,17 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import TaskList from "./components/list";
 import { SORT_FIELD_LABELS } from "./constants";
-import { SortField, SortOrder } from "./types";
+import { SortField } from "./types";
 
 export default function TaskListPage({ categoryId }: { categoryId?: string }) {
     const router = useRouter();
-    const [sortField, setSortField] = useState<SortField>("name");
-    const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-    const [statusFilter, setStatusFilter] = useState<Status | undefined>(
-        undefined
-    );
-    const [priorityFilter, setPriorityFilter] = useState<Priority | undefined>(
-        undefined
-    );
+    const {
+        filters,
+        setStatus: setStatusFilter,
+        setPriority: setPriorityFilter,
+        setSortField,
+        setSortOrder,
+    } = useFilters();
     const [activeTab, setActiveTab] = useState<string>("all");
 
     // Get all tasks to calculate counts
@@ -48,30 +48,35 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
             .length,
     };
 
-    const handleTabChange = useCallback((value: string) => {
-        setActiveTab(value);
-        if (value === "all") {
-            setStatusFilter(undefined);
-        } else {
-            setStatusFilter(value as Status);
-        }
-    }, []);
+    const handleTabChange = useCallback(
+        (value: string) => {
+            setActiveTab(value);
+            if (value === "all") {
+                setStatusFilter("all");
+            } else {
+                setStatusFilter(value as Status);
+            }
+        },
+        [setStatusFilter]
+    );
 
-    const handlePriorityChange = useCallback((value: "all" | Priority) => {
-        if (value === "all") {
-            setPriorityFilter(undefined);
-        } else {
+    const handlePriorityChange = useCallback(
+        (value: "all" | Priority) => {
             setPriorityFilter(value);
-        }
-    }, []);
+        },
+        [setPriorityFilter]
+    );
 
-    const handleSortFieldChange = useCallback((value: SortField) => {
-        setSortField(value);
-    }, []);
+    const handleSortFieldChange = useCallback(
+        (value: SortField) => {
+            setSortField(value);
+        },
+        [setSortField]
+    );
 
     const handleSortOrderChange = useCallback(() => {
-        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    }, []);
+        setSortOrder(filters.sortOrder === "asc" ? "desc" : "asc");
+    }, [setSortOrder, filters.sortOrder]);
 
     return (
         <div className="flex flex-col items-start justify-start w-full gap-4">
@@ -91,7 +96,7 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
                 <div className="flex gap-4 flex-wrap justify-end">
                     <div className="flex gap-4 flex-wrap">
                         <Select
-                            value={priorityFilter}
+                            value={filters.priority}
                             onValueChange={handlePriorityChange}
                         >
                             <SelectTrigger className="w-[180px]">
@@ -110,7 +115,7 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
 
                         <div className="flex flex-row justify-between">
                             <Select
-                                value={sortField}
+                                value={filters.sortField}
                                 onValueChange={handleSortFieldChange}
                             >
                                 <SelectTrigger className="w-[180px] border-r-0 rounded-r-none">
@@ -128,7 +133,7 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
                             </Select>
 
                             <div className="bg-input/30 flex gap-2 items-center border-1 border-input px-2 rounded-lg rounded-l-none cursor-pointer">
-                                {sortOrder === "asc" ? (
+                                {filters.sortOrder === "asc" ? (
                                     <span onClick={handleSortOrderChange}>
                                         <ArrowUpIcon className="h-4 w-4" />
                                     </span>
@@ -174,10 +179,18 @@ export default function TaskListPage({ categoryId }: { categoryId?: string }) {
                 <div className="space-y-4 w-full flex flex-col items-center justify-center gap-4 mt-4">
                     <TaskList
                         categoryId={categoryId}
-                        sortField={sortField}
-                        sortOrder={sortOrder}
-                        statusFilter={statusFilter}
-                        priorityFilter={priorityFilter}
+                        sortField={filters.sortField}
+                        sortOrder={filters.sortOrder}
+                        statusFilter={
+                            filters.status === "all"
+                                ? undefined
+                                : filters.status
+                        }
+                        priorityFilter={
+                            filters.priority === "all"
+                                ? undefined
+                                : filters.priority
+                        }
                     />
                 </div>
             </Tabs>
