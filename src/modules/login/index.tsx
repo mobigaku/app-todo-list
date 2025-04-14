@@ -25,7 +25,7 @@ export function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const from = searchParams.get("from") || "/dashboard";
+    const from = searchParams.get("from") || "/";
 
     const form = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),

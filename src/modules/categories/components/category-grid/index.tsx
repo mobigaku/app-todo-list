@@ -8,7 +8,16 @@ import { useRouter } from "next/navigation";
 
 interface CategoryGridProps {
     searchQuery: string;
-    tasks: Task[];
+    tasks: {
+        pagination: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+            hasMore: boolean;
+        };
+        tasks: Task[];
+    };
 }
 
 export function CategoryGrid({ searchQuery, tasks }: CategoryGridProps) {
@@ -17,8 +26,13 @@ export function CategoryGrid({ searchQuery, tasks }: CategoryGridProps) {
         search: searchQuery,
     });
 
+    console.log(tasks);
+
     const getCategoryTaskCount = (categoryId: string) =>
-        tasks.filter((task) => task.categoryId === categoryId).length;
+        (tasks &&
+            tasks?.tasks?.filter((task) => task.categoryId === categoryId)
+                ?.length) ||
+        0;
 
     if (isLoadingCategories) {
         return (
@@ -43,13 +57,15 @@ export function CategoryGrid({ searchQuery, tasks }: CategoryGridProps) {
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-muted-foreground">
-                                {tasks.length}{" "}
-                                {tasks.length === 1 ? "tarefa" : "tarefas"} no
-                                total
+                                {tasks.pagination.total}{" "}
+                                {tasks.pagination.total === 1
+                                    ? "tarefa"
+                                    : "tarefas"}{" "}
+                                no total
                             </p>
                         </CardContent>
                     </Card>
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                         <Card
                             key={category.id}
                             className={
