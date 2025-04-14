@@ -9,40 +9,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    PRIORITY_COLORS,
+    PRIORITY_LABELS,
+    STATUS_COLORS,
+    STATUS_LABELS,
+} from "@/constants/task";
 import { useTasks } from "@/src/hooks/use-tasks";
 import { Task } from "@/types/prisma";
 import { toast } from "sonner";
 
 type Priority = "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
 type Status = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-
-const priorityLabels: Record<Priority, string> = {
-    LOW: "Baixa",
-    MEDIUM: "Média",
-    HIGH: "Alta",
-    MAXIMUM: "Máxima",
-};
-
-const statusLabels: Record<Status, string> = {
-    PENDING: "Não Iniciada",
-    IN_PROGRESS: "Em Andamento",
-    COMPLETED: "Concluída",
-    CANCELLED: "Cancelada",
-};
-
-const priorityColors: Record<Priority, string> = {
-    LOW: "bg-green-500",
-    MEDIUM: "bg-yellow-500",
-    HIGH: "bg-orange-500",
-    MAXIMUM: "bg-red-500",
-};
-
-const statusColors: Record<Status, string> = {
-    PENDING: "bg-gray-500",
-    IN_PROGRESS: "bg-blue-500",
-    COMPLETED: "bg-green-500",
-    CANCELLED: "bg-red-500",
-};
 
 interface TaskStatusPriorityProps {
     task: Task;
@@ -117,8 +95,8 @@ export function TaskStatusPriority({
                     <h3 className="text-sm font-medium text-muted-foreground">
                         Status
                     </h3>
-                    <Badge className={statusColors[task.status]}>
-                        {statusLabels[task.status]}
+                    <Badge className={STATUS_COLORS[task.status]}>
+                        {STATUS_LABELS[task.status]}
                     </Badge>
                 </div>
                 <Button
@@ -135,8 +113,8 @@ export function TaskStatusPriority({
                 <h3 className="text-sm font-medium text-muted-foreground">
                     Prioridade
                 </h3>
-                <Badge className={priorityColors[task.priority]}>
-                    {priorityLabels[task.priority]}
+                <Badge className={PRIORITY_COLORS[task.priority]}>
+                    {PRIORITY_LABELS[task.priority]}
                 </Badge>
             </div>
 

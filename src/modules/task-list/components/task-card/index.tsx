@@ -7,12 +7,12 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { PRIORITY_LABELS, STATUS_LABELS } from "@/constants/task";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/prisma";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle, Circle, MinusCircle, PlayCircle } from "lucide-react";
-import { priorityLabels, statusLabels } from "../../utils";
 import DeleteDialog from "../delete-dialog";
 import EditDialog from "../edit-dialog";
 
@@ -86,7 +86,7 @@ export function TaskCard({ task, isLoading }: TaskCardProps) {
                                 "bg-gray-100 text-gray-700"
                         )}
                     >
-                        {priorityLabels[task.priority]}
+                        {PRIORITY_LABELS[task.priority]}
                     </Badge>
 
                     <Badge
@@ -102,7 +102,7 @@ export function TaskCard({ task, isLoading }: TaskCardProps) {
                                 "bg-gray-100 text-gray-700"
                         )}
                     >
-                        {statusLabels[task.status]}
+                        {STATUS_LABELS[task.status]}
                     </Badge>
                 </div>
             </CardHeader>
