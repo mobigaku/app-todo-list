@@ -72,7 +72,7 @@ function TaskListContent({
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full max-w-full lg:max-w-2/3">
             {tasks.map((task) => (
                 <TaskCard key={task.id} task={task} isLoading={isLoading} />
             ))}
