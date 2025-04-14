@@ -16,6 +16,16 @@ cp .env.example .env
 -   `NEXTAUTH_SECRET`: Chave secreta para autenticação (você pode gerar uma usando `openssl rand -base64 32`)
 -   `NEXTAUTH_URL`: URL base da sua aplicação (mantenha como "http://localhost:3000" para desenvolvimento local)
 
+3. Inicialize o Prisma:
+```bash
+npx prisma generate
+```
+
+4. Execute as migrações do banco de dados:
+```bash
+npx prisma migrate dev
+```
+
 Em seguida, execute o servidor de desenvolvimento:
 
 ```bash
