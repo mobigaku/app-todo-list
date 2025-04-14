@@ -2,7 +2,21 @@ Este é um projeto [Next.js](https://nextjs.org) inicializado com [`create-next-
 
 ## Começando
 
-Primeiro, execute o servidor de desenvolvimento:
+Primeiro, configure as variáveis de ambiente:
+
+1. Copie o arquivo de exemplo de ambiente:
+
+```bash
+cp .env.example .env
+```
+
+2. Abra o arquivo `.env` e atualize os valores:
+
+-   `DATABASE_URL`: URL de conexão com o banco de dados (o padrão usa SQLite)
+-   `NEXTAUTH_SECRET`: Chave secreta para autenticação (você pode gerar uma usando `openssl rand -base64 32`)
+-   `NEXTAUTH_URL`: URL base da sua aplicação (mantenha como "http://localhost:3000" para desenvolvimento local)
+
+Em seguida, execute o servidor de desenvolvimento:
 
 ```bash
 npm run dev
