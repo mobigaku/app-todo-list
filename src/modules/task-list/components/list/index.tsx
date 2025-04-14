@@ -9,6 +9,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { useTasks } from "@/hooks/use-tasks";
+import { Separator } from "@/src/components/ui/separator";
 import { cn } from "@/src/lib/utils";
 import { Priority, Status } from "@/types/prisma";
 import { format } from "date-fns";
@@ -49,11 +50,11 @@ export default function TaskList({
             Nenhuma tarefa encontrada.
         </div>
     ) : (
-        <div className="grid grid-cols-1  gap-4 w-full">
+        <div className="grid grid-cols-1 gap-4 w-full">
             {tasks.map((task) => (
                 <Card
                     key={task.id}
-                    className={"w-full gap-1 pt-0 overflow-hidden"}
+                    className={"w-full gap-1 py-0 overflow-hidden "}
                 >
                     <CardHeader
                         className={cn(
@@ -63,34 +64,74 @@ export default function TaskList({
                             task.priority === "MAXIMUM" && "bg-red-500",
                             task.priority === "HIGH" && "bg-yellow-500",
                             task.priority === "MEDIUM" && "bg-blue-500",
-                            task.priority === "LOW" && "bg-gray-700"
+                            task.priority === "LOW" &&
+                                "dark:bg-gray-700 bg-gray-200"
                         )}
                     >
-                        <CardTitle className="flex flex-row items-center gap-2 justify-center font-bold text-2xl">
+                        <CardTitle className="flex items-start gap-2 justify-start font-bold lg:text-2xl text-lg lg:flex-row flex-col">
                             {task.name}{" "}
-                            <span className="text-lg font-normal text-muted-foreground">
+                            <span className="md:text-lg text-sm font-normal text-foreground/70">
                                 (Prioridade: {priorityLabels[task.priority]})
                             </span>
                         </CardTitle>
 
-                        <div>
-                            <span className="font-semibold">Status:</span>{" "}
-                            {statusLabels[task.status]}
+                        <div className="flex items-start gap-2 h-full">
+                            <div
+                                className={cn(
+                                    "rounded-lg bg-white text-black p-1 px-2 text-xs font-bold",
+
+                                    task.status === "COMPLETED" &&
+                                        "bg-green-100 text-green-500",
+                                    task.status === "CANCELLED" &&
+                                        "bg-red-100 text-red-500",
+                                    task.priority === "MAXIMUM" &&
+                                        "bg-red-100 text-red-500",
+                                    task.priority === "HIGH" &&
+                                        "bg-yellow-100 text-yellow-500",
+                                    task.priority === "MEDIUM" &&
+                                        "bg-blue-100 text-blue-500",
+                                    task.priority === "LOW" &&
+                                        "bg-gray-100 text-gray-700"
+                                )}
+                            >
+                                {statusLabels[task.status]}
+                            </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="space-y-2 pt-3">
                         <div>{task.description}</div>
                     </CardContent>
-                    <CardFooter className="justify-between space-x-2">
-                        <div className="text-sm text-muted-foreground">
-                            <span className="font-semibold">
-                                Data de Conclusão:
-                            </span>{" "}
-                            {task.endDate
-                                ? format(task.endDate, "PPP", {
-                                      locale: ptBR,
-                                  })
-                                : "N/A"}
+
+                    <div className="flex items-center justify-center mx-4">
+                        <Separator className=" my-0" />
+                    </div>
+
+                    <CardFooter className="justify-between space-x-2 pb-3">
+                        <div className="flex lg:flex-row flex-col lg:items-center lg:justify-start justify-center gap-0">
+                            <div className="text-sm text-muted-foreground">
+                                <span className="font-semibold"></span>{" "}
+                                {task.createdAt
+                                    ? format(task.createdAt, "PPP", {
+                                          locale: ptBR,
+                                      })
+                                    : "N/A"}
+                            </div>
+
+                            <Separator
+                                orientation="vertical"
+                                className="h-full"
+                            />
+
+                            <div className="text-sm text-muted-foreground">
+                                <span className="font-semibold">
+                                    Data de Conclusão:
+                                </span>{" "}
+                                {task.endDate
+                                    ? format(task.endDate, "PPP", {
+                                          locale: ptBR,
+                                      })
+                                    : "N/A"}
+                            </div>
                         </div>
 
                         <div className="flex gap-2 justify-end">
