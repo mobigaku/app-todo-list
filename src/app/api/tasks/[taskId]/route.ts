@@ -1,116 +1,174 @@
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import prisma from "@/lib/prisma";
+import { updateTaskSchema } from "@/lib/validations/task";
+import { Status } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 export async function GET(
-    req: Request,
+    request: Request,
     { params }: { params: { taskId: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
+
         if (!session?.user) {
-            return new NextResponse("Não autorizado", { status: 401 });
+            return NextResponse.json(
+                { error: "Não autorizado" },
+                { status: 401 }
+            );
         }
 
-        const task = await db.task.findUnique({
+        const task = await prisma.task.findUnique({
             where: {
                 id: params.taskId,
                 userId: session.user.id,
             },
-            include: {
-                category: true,
-            },
+            include: { category: true },
         });
 
         if (!task) {
-            return new NextResponse("Tarefa não encontrada", { status: 404 });
+            return NextResponse.json(
+                { error: "Tarefa não encontrada" },
+                { status: 404 }
+            );
         }
 
         return NextResponse.json(task);
     } catch (error) {
         console.error("[TASK_GET]", error);
-        return new NextResponse("Erro interno do servidor", { status: 500 });
+        return NextResponse.json(
+            { error: "Erro interno do servidor" },
+            { status: 500 }
+        );
     }
 }
 
 export async function PATCH(
-    req: Request,
+    request: Request,
     { params }: { params: { taskId: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
+
         if (!session?.user) {
-            return new NextResponse("Não autorizado", { status: 401 });
+            return NextResponse.json(
+                { error: "Não autorizado" },
+                { status: 401 }
+            );
         }
 
-        const body = await req.json();
-        const {
-            name,
-            description,
-            startDate,
-            endDate,
-            priority,
-            status,
-            categoryId,
-        } = body;
-        console.log({ body });
+        const body = await request.json();
+        const result = updateTaskSchema.safeParse(body);
 
-        if (!name) {
-            return new NextResponse("Nome da tarefa é obrigatório", {
-                status: 400,
-            });
+        if (!result.success) {
+            return NextResponse.json(
+                { error: "Nome da tarefa é obrigatório" },
+                { status: 400 }
+            );
         }
 
-        if (!startDate) {
-            return new NextResponse("Data de início é obrigatória", {
-                status: 400,
-            });
-        }
-
-        const task = await db.task.update({
+        // First check if task exists
+        const existingTask = await prisma.task.findUnique({
             where: {
                 id: params.taskId,
                 userId: session.user.id,
             },
-            data: {
-                name,
-                description,
-                startDate: new Date(startDate),
-                endDate: endDate ? new Date(endDate) : null,
-                priority,
-                status,
-                categoryId,
-            },
         });
 
-        return NextResponse.json(task);
+        if (!existingTask) {
+            return NextResponse.json(
+                { error: "Tarefa não encontrada" },
+                { status: 404 }
+            );
+        }
+
+        try {
+            const task = await prisma.task.update({
+                where: {
+                    id: params.taskId,
+                    userId: session.user.id,
+                },
+                data: {
+                    name: result.data.name,
+                    description: result.data.description,
+                    startDate: new Date(result.data.startDate),
+                    endDate: result.data.endDate
+                        ? new Date(result.data.endDate)
+                        : null,
+                    priority: result.data.priority,
+                    status: result.data.status as Status,
+                    categoryId: result.data.categoryId || undefined,
+                },
+            });
+
+            return NextResponse.json(task);
+        } catch (updateError) {
+            console.error("[TASK_PATCH] Database error:", updateError);
+            return NextResponse.json(
+                { error: "Erro interno do servidor" },
+                { status: 500 }
+            );
+        }
     } catch (error) {
         console.error("[TASK_PATCH]", error);
-        return new NextResponse("Erro interno do servidor", { status: 500 });
+        return NextResponse.json(
+            { error: "Erro interno do servidor" },
+            { status: 500 }
+        );
     }
 }
 
 export async function DELETE(
-    req: Request,
+    request: Request,
     { params }: { params: { taskId: string } }
 ) {
     try {
         const session = await getServerSession(authOptions);
+
         if (!session?.user) {
-            return new NextResponse("Não autorizado", { status: 401 });
+            return NextResponse.json(
+                { error: "Não autorizado" },
+                { status: 401 }
+            );
         }
 
-        const task = await db.task.delete({
+        // First check if task exists
+        const existingTask = await prisma.task.findUnique({
             where: {
                 id: params.taskId,
                 userId: session.user.id,
             },
         });
 
-        return NextResponse.json(task);
+        if (!existingTask) {
+            return NextResponse.json(
+                { error: "Tarefa não encontrada" },
+                { status: 404 }
+            );
+        }
+
+        try {
+            const task = await prisma.task.delete({
+                where: {
+                    id: params.taskId,
+                    userId: session.user.id,
+                },
+            });
+
+            return NextResponse.json(task);
+        } catch (deleteError) {
+            console.error("[TASK_DELETE] Database error:", deleteError);
+            return NextResponse.json(
+                { error: "Erro interno do servidor" },
+                { status: 500 }
+            );
+        }
     } catch (error) {
         console.error("[TASK_DELETE]", error);
-        return new NextResponse("Erro interno do servidor", { status: 500 });
+        return NextResponse.json(
+            { error: "Erro interno do servidor" },
+            { status: 500 }
+        );
     }
 }

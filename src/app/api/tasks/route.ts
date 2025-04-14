@@ -16,6 +16,16 @@ const searchParamsSchema = z.object({
     limit: z.coerce.number().min(1).max(10000).optional(),
 });
 
+const createTaskSchema = z.object({
+    name: z.string().min(1, "O nome da tarefa é obrigatório"),
+    description: z.string().optional(),
+    status: z.nativeEnum(Status),
+    priority: z.nativeEnum(Priority),
+    categoryId: z.string().min(1, "A categoria é obrigatória"),
+    startDate: z.date().default(() => new Date()),
+    endDate: z.date().optional().nullable(),
+});
+
 export async function GET(request: NextRequest) {
     try {
         const user = await getCurrentUser();
@@ -94,14 +104,33 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
 
-        const task = await prisma.task.create({
-            data: {
+        try {
+            const rawData = {
                 ...body,
-                userId: user.id,
-            },
-        });
+                startDate: body.startDate
+                    ? new Date(body.startDate)
+                    : new Date(),
+                endDate: body.endDate ? new Date(body.endDate) : null,
+            };
+            const validatedData = createTaskSchema.parse(rawData);
 
-        return NextResponse.json(task);
+            const task = await prisma.task.create({
+                data: {
+                    ...validatedData,
+                    userId: user.id,
+                },
+            });
+
+            return NextResponse.json(task, { status: 200 });
+        } catch (validationError) {
+            if (validationError instanceof z.ZodError) {
+                return NextResponse.json(
+                    { error: "Dados inválidos" },
+                    { status: 400 }
+                );
+            }
+            throw validationError;
+        }
     } catch (error) {
         console.error("[TASKS_POST]", error);
         return NextResponse.json(

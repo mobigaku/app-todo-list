@@ -1,8 +1,8 @@
 import { authOptions } from "@/lib/auth";
 import { errorMessages, retryConfig } from "@/lib/error-handling";
-import prisma from "@/src/lib/prisma";
+import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { getServerSession } from "next-auth";
+import { getServerSession, Session } from "next-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -98,8 +98,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    let session: Session | null = null;
     try {
-        const session = await getServerSession(authOptions);
+        session = await getServerSession(authOptions);
 
         if (!session?.user?.id) {
             console.error("[CATEGORIES_POST] No user ID in session:", session);
@@ -156,7 +157,6 @@ export async function POST(req: Request) {
             );
         }
 
-        // Log specific Prisma errors
         if (error && typeof error === "object" && "code" in error) {
             const prismaError = error as Prisma.PrismaClientKnownRequestError;
             console.error(
