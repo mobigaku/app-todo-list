@@ -1,55 +1,71 @@
-import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/store";
 import {
-  setStatusFilter,
-  setPriorityFilter,
-  setDateRangeFilter,
-  setCategoryFilter,
-  setSearchFilter,
-  clearFilters,
+    clearFilters,
+    setCategoryFilter,
+    setDateRangeFilter,
+    setPriorityFilter,
+    setSearchFilter,
+    setStatusFilter,
 } from "@/lib/store/slices/filter-slice";
 import { Priority, Status } from "@/src/types/prisma";
+import { useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface DateRange {
-  startDate: string | null;
-  endDate: string | null;
+    startDate: string | null;
+    endDate: string | null;
 }
 
 export function useFilters() {
-  const dispatch = useDispatch();
-  const filters = useSelector((state: RootState) => state.filters);
+    const dispatch = useDispatch();
+    const filters = useSelector((state: RootState) => state.filters);
 
-  const setStatus = (status: Status | "all") => {
-    dispatch(setStatusFilter(status));
-  };
+    const handleSetStatus = useCallback(
+        (status: Status | "all") => {
+            dispatch(setStatusFilter(status));
+        },
+        [dispatch]
+    );
 
-  const setPriority = (priority: Priority | "all") => {
-    dispatch(setPriorityFilter(priority));
-  };
+    const handleSetPriority = useCallback(
+        (priority: Priority | "all") => {
+            dispatch(setPriorityFilter(priority));
+        },
+        [dispatch]
+    );
 
-  const setDateRange = (dateRange: DateRange) => {
-    dispatch(setDateRangeFilter(dateRange));
-  };
+    const handleSetDateRange = useCallback(
+        (dateRange: DateRange) => {
+            dispatch(setDateRangeFilter(dateRange));
+        },
+        [dispatch]
+    );
 
-  const setCategory = (categoryId: string | "all") => {
-    dispatch(setCategoryFilter(categoryId));
-  };
+    const handleSetCategory = useCallback(
+        (categoryId: string | "all") => {
+            dispatch(setCategoryFilter(categoryId));
+        },
+        [dispatch]
+    );
 
-  const setSearch = (search: string) => {
-    dispatch(setSearchFilter(search));
-  };
+    const handleSetSearch = useCallback(
+        (search: string) => {
+            dispatch(setSearchFilter(search));
+        },
+        [dispatch]
+    );
 
-  const clear = () => {
-    dispatch(clearFilters());
-  };
+    const handleClear = useCallback(() => {
+        dispatch(clearFilters());
+    }, [dispatch]);
 
-  return {
-    filters,
-    setStatus,
-    setPriority,
-    setDateRange,
-    setCategory,
-    setSearch,
-    clear,
-  };
-} 
+    return {
+        filters,
+        setStatus: handleSetStatus,
+        setPriority: handleSetPriority,
+        setDateRange: handleSetDateRange,
+        setCategory: handleSetCategory,
+        setSearch: handleSetSearch,
+        clear: handleClear,
+    };
+}

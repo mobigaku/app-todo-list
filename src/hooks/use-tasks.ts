@@ -1,6 +1,7 @@
 import { Task } from "@/types/prisma";
 import { Priority, Status } from "@prisma/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { toast } from "sonner";
 
 interface UseTasksOptions {
@@ -47,7 +48,7 @@ export function useTasks({
 }: UseTasksOptions = {}) {
     const queryClient = useQueryClient();
 
-    function buildQueryString() {
+    const buildQueryString = useCallback(() => {
         const params = new URLSearchParams();
 
         if (categoryId) {
@@ -79,7 +80,7 @@ export function useTasks({
         }
 
         return params.toString();
-    }
+    }, [categoryId, sortBy, sortOrder, searchQuery, page, limit]);
 
     const { data, isLoading: isQueryLoading } = useQuery<TasksResponse>({
         queryKey: [
@@ -100,8 +101,8 @@ export function useTasks({
         },
     });
 
-    const { mutate: createTask, isPending: isCreateLoading } = useMutation({
-        mutationFn: async (task: {
+    const createTaskFn = useCallback(
+        async (task: {
             name: string;
             description?: string;
             categoryId?: string;
@@ -120,17 +121,11 @@ export function useTasks({
 
             return response.json();
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["tasks"] });
-            toast.success("Tarefa criada com sucesso!");
-        },
-        onError: () => {
-            toast.error("Erro ao criar tarefa");
-        },
-    });
+        []
+    );
 
-    const { mutate: updateTask, isPending: isUpdateLoading } = useMutation({
-        mutationFn: async ({
+    const updateTaskFn = useCallback(
+        async ({
             id,
             ...task
         }: {
@@ -155,6 +150,34 @@ export function useTasks({
 
             return response.json();
         },
+        []
+    );
+
+    const deleteTaskFn = useCallback(async (id: string) => {
+        const response = await fetch(`/api/tasks/${id}`, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to delete task");
+        }
+
+        return response.json();
+    }, []);
+
+    const { mutate: createTask, isPending: isCreateLoading } = useMutation({
+        mutationFn: createTaskFn,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["tasks"] });
+            toast.success("Tarefa criada com sucesso!");
+        },
+        onError: () => {
+            toast.error("Erro ao criar tarefa");
+        },
+    });
+
+    const { mutate: updateTask, isPending: isUpdateLoading } = useMutation({
+        mutationFn: updateTaskFn,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["tasks"] });
             toast.success("Tarefa atualizada com sucesso!");
@@ -165,17 +188,7 @@ export function useTasks({
     });
 
     const { mutate: deleteTask, isPending: isDeleteLoading } = useMutation({
-        mutationFn: async (id: string) => {
-            const response = await fetch(`/api/tasks/${id}`, {
-                method: "DELETE",
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to delete task");
-            }
-
-            return response.json();
-        },
+        mutationFn: deleteTaskFn,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["tasks"] });
             toast.success("Tarefa excluída com sucesso!");
